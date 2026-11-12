@@ -16,7 +16,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://jbncsigalbtfwkxpgwso.supa
 SUPABASE_ANON = os.environ.get("SUPABASE_ANON_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibmNzaWdhbGJ0ZndreHBnd3NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMDUxODcsImV4cCI6MjA5Mjc4MTE4N30.KML-1uKz7J0YYy0Z3Y8VHZhcrPRd9AR8PqdqbUaP9LY")
 ENGINE_SECRET = os.environ.get("ENGINE_SECRET", "")
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-opus-5-5")
-MAX_TOKENS = int(os.environ.get("CLAUDE_MAX_TOKENS", "32000"))
+MAX_TOKENS = int(os.environ.get("CLAUDE_MAX_TOKENS", "64000"))
 TZ = ZoneInfo("America/Toronto")
 HERE = os.path.dirname(os.path.abspath(__file__))
 
