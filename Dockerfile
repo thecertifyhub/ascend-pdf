@@ -9,6 +9,6 @@ RUN fc-cache -f
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py engine.py assets.enc roadmap.py roadmap_job.py ./
+COPY app.py engine.py assets.enc roadmap.py roadmap_job.py roadmap_timing.py ./
 COPY templates/ ./templates/
 CMD gunicorn -b 0.0.0.0:${PORT:-10000} -w 1 --threads 4 --timeout 300 app:app
