@@ -119,7 +119,9 @@ const listJoin = (xs: string[], lang: Lang) => xs.length < 2 ? (xs[0] ?? "")
   : xs.slice(0, -1).join(", ") + (lang === "EN" ? (xs.length > 2 || xs.some((x) => x.includes(" and ")) ? ", and " : " and ") : " et ") + xs[xs.length - 1];
 
 function fill(t: string, v: Record<string, string>): string {
-  return t.replace(/\{(\w+)\}/g, (_, k) => (k in v ? v[k] : `{${k}}`)).replace(/\s+([.,])/g, "$1").replace(/ {2,}/g, " ").trim();
+  return t.replace(/\{(\w+)\}/g, (_, k) => (k in v ? v[k] : `{${k}}`)).replace(/\s+([.,])/g, "$1").replace(/ {2,}/g, " ")
+    .replace(/([.!?] (?:\[\[\d+\]\])*)(\p{Ll})/gu, (_, a, c) => a + c.toUpperCase())   // a sentence starts with a capital
+    .trim();
 }
 
 // ---------------------------------------------------------------- slide plan (mirrors roadmap.py)

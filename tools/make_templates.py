@@ -70,6 +70,29 @@ FOOTER_TOP = 6604816  # footers sit closer to the bottom edge
 REMOVE = {15: ["pay_label", "pay0_text", "pay1_text", "fine_text"]}
 
 
+LEGEND_FR = ["0 à 5 : à renforcer   ", "6 à 7 : en progrès   ", "8 et plus : en bonne voie"]
+
+
+def fr_legend(prs):
+    """Slide 10 legend: three runs coloured like the English one (red, amber, green)."""
+    import copy
+    from pptx.dml.color import RGBColor
+    sh = next(x for x in prs.slides[9].shapes if x.name == "legend_text")
+    para = sh.text_frame.paragraphs[0]
+    runs = para.runs
+    base = runs[0]._r
+    for r in runs[1:]:
+        r._r.getparent().remove(r._r)
+    for i, (txt, col) in enumerate(zip(LEGEND_FR, ["C2463A", "E0A526", "2E7D4F"])):
+        r = base if i == 0 else copy.deepcopy(base)
+        if i:
+            para._p.append(r)
+        from pptx.text.text import _Run
+        run = _Run(r, para)
+        run.text = txt
+        run.font.color.rgb = RGBColor.from_string(col)
+
+
 def add_break(shape, pidx):
     """Soft line break at the end of paragraph pidx (an empty line before the next one)."""
     p = shape.text_frame.paragraphs[pidx]._p
@@ -248,6 +271,8 @@ def make(src, lang, out):
             sh[n].left -= 12700 * 34; sh[n].width += 12700 * 34
     import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
     import roadmap_timing; roadmap_timing.prune_dangling(prs)  # removed shapes must not keep their animations
+    if lang == "FR":
+        fr_legend(prs)
     prs.save(out)
 
 
