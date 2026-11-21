@@ -102,6 +102,14 @@ const PILLARS_DE_FR = ["des affaires et de la gestion", "de la fiabilité des pr
 const RATING_FR: Record<string, string> = { "very good": "très bonnes", good: "bonnes", moderate: "modérées", fair: "passables",
   limited: "limitées", "very limited": "très limitées", undetermined: "indéterminées" };
 
+// gap dimensions 1 to 8 (generator), spoken with their article in French
+const GAP_TITLES: Record<Lang, string[]> = {
+  EN: ["", "leadership depth", "reliability-driven decision-making", "business impact of actions", "systems thinking",
+    "operational complexity management", "cross-functional influence", "strategic maintenance ownership", "executive communication"],
+  FR: ["", "la profondeur du leadership", "la prise de décision basée sur l'analyse de fiabilité", "l'impact business des actions", "la vision système",
+    "la gestion de la complexité opérationnelle", "l'influence transversale", "la maîtrise stratégique de la maintenance", "la communication exécutive"],
+};
+
 function nice(x: number): [number, number] {
   const fs: [number, number][] = [[1, 4], [1, 3], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5]];
   return fs.reduce((b, f) => (Math.abs(f[0] / f[1] - x) < Math.abs(b[0] / b[1] - x) ? f : b));
@@ -209,9 +217,14 @@ export function personalTexts(doc: any, req: any, T: Templates, lang: Lang): Sli
     expertise_sentence: fill(T[`s05_expertise_${st("expertise")}`], v),
     experience_sentence: fill(T[`s05_experience_${st("experience")}`], v),
     cert_sentence: T[`s05_cert_${rq.certification === "in_progress" ? "in_progress" : rq.certification === "on_track" ? "on_track" : "not_started"}`] }) });
-  // 6 gaps
-  const gs: string[] = Array.isArray(sv.gap_sentences) ? sv.gap_sentences : [];
-  out.push({ slide: 6, text: fill(T.s06, { ...v, gap_1: gs[0] ?? "", gap_2: gs[1] ?? "", gap_3: gs[2] ?? "" }) });
+  // 6 gaps: each one named, then explained ("First, systems thinking: look beyond each machine ...")
+  const gs: string[] = (Array.isArray(sv.gap_sentences) ? sv.gap_sentences : []).map((x: string) => {
+    let y = x.trim().replace(lang === "EN" ? /^(the )?(first|second|third)( step| one| gap)? is (to )?/i : /^(la |le )?(première|premier|deuxième|troisième)( étape| piste)? (est|consiste à) (de |d'|à )?/i, "");
+    return y ? y[0].toLowerCase() + y.slice(1) : y;
+  });
+  const gt = (doc.gaps ?? []).slice(0, 3).map((g: any) => GAP_TITLES[lang][Number(g.n)] ?? lcFirst(String(g.title ?? "")));
+  out.push({ slide: 6, text: fill(T.s06, { ...v, gap_1: gs[0] ?? "", gap_2: gs[1] ?? "", gap_3: gs[2] ?? "",
+    gap_title_1: gt[0] ?? "", gap_title_2: gt[1] ?? "", gap_title_3: gt[2] ?? "" }) });
   // 10 pillars
   const sc: number[] = (doc.pillars ?? []).slice(0, 5).map((p: any) => Math.round(Number(p.score) || 0));
   if (sc.length === 5) {
