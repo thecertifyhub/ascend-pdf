@@ -115,11 +115,11 @@ TXT = {
         "money": lambda v, cents=False: ("${:,.2f}" if cents else "${:,.0f}").format(v),
         "sub": "{amt} with the {disc} debrief discount",
         "save": "SAVE {amt}",
-        "pay_band": ["Prices in {cur}. Payment plans available.", "", "The {disc} discount is offered during your 15-minute roadmap debrief."],
+        "pay_band": ["The {disc} discount is offered during your 15-minute roadmap debrief. Book it as soon as you finish this presentation.", "Prices in {cur}. Payment plans available."],
         "cur": {"CAD": "Canadian dollars", "USD": "US dollars"},
         "roi": "The guided program pays for itself in {a} to {b} months in your new role.",
         "roi_one": "The guided program pays for itself in about {a} month{s} in your new role.",
-        "roi_band": ["Based on the wage gap shown earlier. Prices in {cur}. Payment plans available.", "The {disc} discount is offered during your 15-minute roadmap debrief."],
+        "roi_band": ["The {disc} discount is offered during your 15-minute roadmap debrief. Book it as soon as you finish this presentation.", "Based on the wage gap shown earlier. Prices in {cur}. Payment plans available."],
         "step0": "Book your 15-minute roadmap debrief\nBy {date}. We answer your questions and confirm your path.",
         "kstat": lambda a, b: (f"${a}K" if a == b else f"${a}K to ${b}K"),
     },
@@ -170,11 +170,11 @@ TXT = {
         "money": lambda v, cents=False: (("{:,.2f}" if cents and round(v, 2) != int(v) else "{:,.0f}").format(v).replace(",", "\u00a0").replace(".", ",")) + "\u00a0$",
         "sub": "{amt} après le rabais de {disc}",
         "save": "ÉCONOMIE {amt}",
-        "pay_band": ["Prix en {cur}. Plans de paiement disponibles.", "", "Le rabais de {disc} est offert pendant votre débriefing de 15 minutes de votre feuille de route."],
+        "pay_band": ["Le rabais de {disc} vous est offert pendant votre débriefing de 15 minutes. Réservez-le dès la fin de cette présentation.", "Prix en {cur}. Plans de paiement disponibles."],
         "cur": {"CAD": "dollars canadiens", "USD": "dollars américains"},
         "roi": "Le programme guidé est rentabilisé en {a} à {b} mois dans votre nouveau poste.",
         "roi_one": "Le programme guidé est rentabilisé en environ {a} mois dans votre nouveau poste.",
-        "roi_band": ["Selon l'écart salarial présenté plus tôt. Prix en {cur}. Plans de paiement disponibles.", "Le rabais de {disc} est offert pendant votre débriefing de 15 minutes de votre feuille de route."],
+        "roi_band": ["Le rabais de {disc} vous est offert pendant votre débriefing de 15 minutes. Réservez-le dès la fin de cette présentation.", "Selon l'écart salarial présenté plus tôt. Prix en {cur}. Plans de paiement disponibles."],
         "step0": "Réservez votre débriefing de 15 minutes\nAvant le {date}. Nous répondons à vos questions et confirmons votre parcours.",
         "kstat": lambda a, b: (f"{a}\u00a0k$" if a == b else f"{a}\u00a0k$ à {b}\u00a0k$"),
     },
@@ -495,18 +495,21 @@ def build(job):
     set_lines(s15["tier2_save_label"], T["save"].format(amt=money(save)))
     cur = T["cur"].get(pr["currency"], pr["currency"])
     pb = payback(doc, pr)
+    # green band: [payback headline (gold)], discount line highlighted (bold, white), then the small print
+    lines = [x.format(cur=cur, disc=money(disc)) for x in (T["roi_band"] if pb else T["pay_band"])]
+    styles = [(13, True, "FFFFFF"), (11, False, "D9E6DF")]
     if pb:
-        # the payback is the headline of the green band (narrated on the same click)
         a, b = pb
-        head = (T["roi"] if a != b else T["roi_one"]).format(a=a, b=b, s="" if a == 1 else "s")
-        set_lines(s15["pay_band"], [head] + [x.format(cur=cur, disc=money(disc)) for x in T["roi_band"]])
-        for k, para in enumerate(s15["pay_band"].text_frame.paragraphs):
-            for r in para.runs:
-                r.font.size = Pt(18 if k == 0 else 12); r.font.bold = (k == 0)
-                r.font.color.rgb = RGBColor.from_string(GOLD_BAND if k == 0 else "FFFFFF")
-            para.space_after = Pt(4 if k == 0 else 0)
+        lines = [(T["roi"] if a != b else T["roi_one"]).format(a=a, b=b, s="" if a == 1 else "s")] + lines
+        styles = [(18, True, GOLD_BAND)] + styles
     else:
-        set_lines(s15["pay_band"], [x.format(cur=cur, disc=money(disc)) for x in T["pay_band"]])
+        styles = [(15, True, GOLD_BAND), (11, False, "D9E6DF")]
+    set_lines(s15["pay_band"], lines)
+    for k, para in enumerate(s15["pay_band"].text_frame.paragraphs):
+        size, bold, col = styles[min(k, len(styles) - 1)]
+        for r in para.runs:
+            r.font.size = Pt(size); r.font.bold = bold; r.font.color.rgb = RGBColor.from_string(col)
+        para.space_after = Pt(3)
 
     # 16 next step
     set_lines(S[15]["step0_text"], T["step0"].format(date=fmt_date(today + datetime.timedelta(days=7), lang)))
