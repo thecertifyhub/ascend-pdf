@@ -110,6 +110,17 @@ const GAP_TITLES: Record<Lang, string[]> = {
     "la gestion de la complexité opérationnelle", "l'influence transversale", "la maîtrise stratégique de la maintenance", "la communication exécutive"],
 };
 
+import { nameAuto } from "./names.ts";
+export { nameAuto };
+function withName(slide: number, text: string, doc: any, req: any, lang: Lang): string {
+  const nv = doc.name_voice ?? nameAuto(req?.first_name, lang);
+  const say = String(nv?.say ?? "").trim();
+  if (!nv?.use || !say) return text;
+  if (slide === 1) return text.replace(lang === "EN" ? /^(\[\[\d+\]\])*Hello,/ : /^(\[\[\d+\]\])*Bonjour,/, (m) => m.replace(/,$/, ` ${say},`));
+  // slide 10: "Kevin, here is where your profile stands" / "Hervé, voici où se situe votre profil"
+  return text.replace(/^((?:\[\[\d+\]\])*)(\p{Lu})/u, (_, mk, c) => `${mk}${say}, ${c.toLowerCase()}`);
+}
+
 function nice(x: number): [number, number] {
   const fs: [number, number][] = [[1, 4], [1, 3], [2, 5], [1, 2], [3, 5], [2, 3], [3, 4], [4, 5]];
   return fs.reduce((b, f) => (Math.abs(f[0] / f[1] - x) < Math.abs(b[0] / b[1] - x) ? f : b));
@@ -160,7 +171,7 @@ export function personalTexts(doc: any, req: any, T: Templates, lang: Lang): Sli
   };
   const out: SlideText[] = [];
   const { drop, gap } = plan(doc);
-  out.push({ slide: 1, text: fill(T.s01, v) });
+  out.push({ slide: 1, text: withName(1, fill(T.s01, v), doc, req, lang) });
   out.push({ slide: 2, text: fill(T.s02, v) });
 
   // 3 market
@@ -234,8 +245,8 @@ export function personalTexts(doc: any, req: any, T: Templates, lang: Lang): Sli
     const others = sc.map((s, i) => [s, i]).filter(([s, i]) => i !== lo && i !== hi && s <= 5).sort((a, b) => a[0] - b[0]).map(([, i]) => i);
     const fb = others.length ? (lang === "EN" ? ", followed by " + listJoin(others.map((i) => PILLARS.EN[i]), "EN")
       : ", suivi " + others.map((i) => PILLARS_DE_FR[i]).join(" et ")) : "";
-    out.push({ slide: 10, text: fill(T.s10, { ...v, strongest: PILLARS[lang][hi], strong_score: words(sc[hi], lang),
-      weakest: PILLARS[lang][lo], weak_score: words(sc[lo], lang), followed_by: fb }) });
+    out.push({ slide: 10, text: withName(10, fill(T.s10, { ...v, strongest: PILLARS[lang][hi], strong_score: words(sc[hi], lang),
+      weakest: PILLARS[lang][lo], weak_score: words(sc[lo], lang), followed_by: fb }), doc, req, lang) });
   }
   // 15 investment: with a payback, slide 15 becomes personal (the standard clip is used otherwise)
   const pb = payback(doc);
