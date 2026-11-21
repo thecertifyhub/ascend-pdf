@@ -97,6 +97,7 @@ def retime(slide, clicks_ms, audio=None):
     for g in groups:
         mk.remove(g)
     if not effects and not audio:
+        sld.remove(timing)
         return
     outer = etree.SubElement(mk, qn("p:par"))
     oc = etree.SubElement(outer, qn("p:cTn"), id=nid(), fill="hold")
@@ -165,6 +166,46 @@ def set_advance(slide, ms):
         if ch.tag in (qn("p:cSld"), qn("p:clrMapOvr")):
             idx = i + 1
     sld.insert(idx, tr)
+
+
+def prune_dangling(prs):
+    """Drop animation steps whose shape no longer exists (PowerPoint refuses such a deck and offers a repair)."""
+    fixed = 0
+    for slide in prs.slides:
+        sld = slide._element
+        timing = sld.find(qn("p:timing"))
+        if timing is None:
+            continue
+        ids = {c.get("id") for c in sld.find(qn("p:cSld")).iter(qn("p:cNvPr"))}
+        for tgt in list(timing.iter(qn("p:spTgt"))):
+            if tgt.get("spid") in ids:
+                continue
+            # climb to the effect: the p:par whose cTn carries a presetClass
+            node = tgt
+            while node is not None and not (node.tag == qn("p:par") and node.find(qn("p:cTn")) is not None
+                                            and node.find(qn("p:cTn")).get("presetClass")):
+                node = node.getparent()
+            if node is not None and node.getparent() is not None:
+                node.getparent().remove(node); fixed += 1
+        for b in list(timing.iter(qn("p:bldP"))):
+            if b.get("spid") not in ids:
+                b.getparent().remove(b); fixed += 1
+        # empty click groups left behind
+        changed = True
+        while changed:
+            changed = False
+            for par in list(timing.iter(qn("p:par"))):
+                ct = par.find(qn("p:cTn"))
+                kids = ct.find(qn("p:childTnLst")) if ct is not None else None
+                if ct is not None and ct.get("nodeType") not in ("tmRoot", "mainSeq") and kids is not None and len(kids) == 0:
+                    par.getparent().remove(par); changed = True
+        bl = timing.find(qn("p:bldLst"))
+        if bl is not None and len(bl) == 0:
+            timing.remove(bl)
+        main = next((c for c in timing.iter(qn("p:cTn")) if c.get("nodeType") == "mainSeq"), None)
+        if main is not None and len(main.find(qn("p:childTnLst"))) == 0:
+            sld.remove(timing)
+    return fixed
 
 
 def apply(prs, manifest, log=None):

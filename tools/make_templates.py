@@ -246,6 +246,8 @@ def make(src, lang, out):
         sh = roadmap.shapes_by_name(prs.slides[14])
         for n in ("tier2_save", "tier2_save_label"):
             sh[n].left -= 12700 * 34; sh[n].width += 12700 * 34
+    import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    import roadmap_timing; roadmap_timing.prune_dangling(prs)  # removed shapes must not keep their animations
     prs.save(out)
 
 

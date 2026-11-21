@@ -492,6 +492,8 @@ def build(job):
     set_lines(S[15]["step0_text"], T["step0"].format(date=fmt_date(today + datetime.timedelta(days=7), lang)))
 
     # narration: one clip per slide, reveals timed to the words, auto-advance (when the voice manifest is there)
+    import roadmap_timing
+    roadmap_timing.prune_dangling(prs)
     timed = []
     if job.get("voice"):
         import roadmap_timing
