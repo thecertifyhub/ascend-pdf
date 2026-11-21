@@ -220,7 +220,9 @@ def apply(prs, manifest, log=None):
             continue
         blob = fetch(m["url"])
         spid = add_audio(slide, blob, name=f"narration_{n}")
-        retime(slide, [int(x) for x in m.get("clicks") or []], audio=(spid, int(m["ms"])))
-        set_advance(slide, int(m["ms"]) + ADVANCE_PAD_MS)
+        # PowerPoint holds a slide until its animations end, and may count "After" only from then: the narration
+        # effect lasts the whole slide (clip + pad) and the slide advances 0 ms after it ends.
+        retime(slide, [int(x) for x in m.get("clicks") or []], audio=(spid, int(m["ms"]) + ADVANCE_PAD_MS))
+        set_advance(slide, 0)
         if log is not None:
             log.append(dict(slide=n, ms=int(m["ms"]), clicks=len(m.get("clicks") or []), bytes=len(blob)))
