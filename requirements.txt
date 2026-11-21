@@ -5,3 +5,4 @@ anthropic==2.8.0
 cryptography==50.0.1
 pypdf==5.9.0
 requests==2.34.2
+python-pptx==1.0.2

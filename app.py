@@ -68,6 +68,16 @@ def intake():
     return jsonify(ok=True, id=job_id, resume=bool(resume), linkedin=bool(linkedin))
 
 
+@app.post("/roadmap/<req_id>/build")
+def roadmap_build(req_id):
+    """Builds the personalized roadmap PPTX + PDF for an approved request, in the background."""
+    if not _authorized():
+        return jsonify(error="unauthorized"), 401
+    import roadmap_job
+    started = roadmap_job.start(req_id)
+    return jsonify(ok=True, started=started), 202
+
+
 @app.route("/jobs/<job_id>/run", methods=["GET", "POST"])
 def run_job(job_id):
     if not _authorized():
