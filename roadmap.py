@@ -99,8 +99,9 @@ TXT = {
         "prov_text": "{n} out of 5 stars {rin}, Job Bank, {period}",
         "prov_text_else": "Elsewhere in Canada: {n} out of 5 stars {rin}, Job Bank, {period}",
         "stars": {5: "Very good", 4: "Good", 3: "Moderate", 2: "Limited", 1: "Very limited"},
-        "prov_concl": "Job Bank, the Government of Canada's job site, rates the job outlook of each occupation from 1 to 5 stars, province by province.\nWhere it is good, employers compete for qualified people. A recognized credential is how they recognize you as one of them.",
-        "prov_concl_mod": "Job Bank, the Government of Canada's job site, rates the job outlook of each occupation from 1 to 5 stars, province by province.\nWhere it is moderate, employers can choose. A recognized credential is how you stand out among qualified candidates.",
+        "prov_concl": "Job Bank rates the job outlook of each occupation from 1 to 5 stars, by province.\nWhere it is good, employers compete for qualified people. A recognized credential helps them recognize you.",
+        "prov_concl_mod": "Job Bank rates the job outlook of each occupation from 1 to 5 stars, by province.\nWhere it is moderate, employers can choose. A recognized credential helps you stand out.",
+        "prov_title_mod": "Demand for this role",
         "prov_source": "Source: Job Bank outlook ratings (Government of Canada), {period}, NOC {code}.",
         "cert_none": "{cred}. No maintenance and reliability credential yet.",
         "cert_none_bare": "No maintenance and reliability credential yet.",
@@ -153,8 +154,9 @@ TXT = {
         "prov_text": "{n} étoiles sur 5 {rin}, Guichet-Emplois, {period}",
         "prov_text_else": "Ailleurs au Canada : {n} étoiles sur 5 {rin}, Guichet-Emplois, {period}",
         "stars": {5: "Très bonnes", 4: "Bonnes", 3: "Modérées", 2: "Limitées", 1: "Très limitées"},
-        "prov_concl": "Guichet-Emplois, le site d'emploi du gouvernement du Canada, note les perspectives d'emploi de chaque profession de 1 à 5 étoiles, province par province.\nLà où elles sont bonnes, les employeurs se disputent les personnes qualifiées. Une certification reconnue leur permet de vous identifier comme l'une d'elles.",
-        "prov_concl_mod": "Guichet-Emplois, le site d'emploi du gouvernement du Canada, note les perspectives d'emploi de chaque profession de 1 à 5 étoiles, province par province.\nLà où elles sont modérées, les employeurs peuvent choisir. Une certification reconnue vous permet de vous démarquer parmi les candidats qualifiés.",
+        "prov_concl": "Guichet-Emplois note les perspectives d'emploi de chaque profession de 1 à 5 étoiles, par province.\nLà où elles sont bonnes, les employeurs se disputent les personnes qualifiées. Une certification reconnue les aide à vous identifier.",
+        "prov_concl_mod": "Guichet-Emplois note les perspectives d'emploi de chaque profession de 1 à 5 étoiles, par province.\nLà où elles sont modérées, les employeurs peuvent choisir. Une certification reconnue vous aide à vous démarquer.",
+        "prov_title_mod": "La demande pour ce poste",
         "prov_source": "Source : cotes des perspectives d'emploi de Guichet-Emplois (gouvernement du Canada), {period}, CNP {code}.",
         "cert_none": "{cred}. Aucune certification en maintenance et fiabilité pour l'instant.",
         "cert_none_bare": "Aucune certification en maintenance et fiabilité pour l'instant.",
@@ -424,7 +426,7 @@ def build(job):
             set_lines(s4["conclusion_text"], T["concl_balance"] if "balance" in c else T["concl_shortage"].format(c=c))
             set_lines(s4["source_text"], T["cops_source"].format(period=fmt_period(nat["period"], lang), code=tgt_code))
         elif prov:
-            set_lines(s4["title"], T["prov_title"])
+            set_lines(s4["title"], T["prov_title"] if stars_of(prov[0]) >= 4 else T["prov_title_mod"])
             # the lead's provinces first, then the best-rated other provinces (demand.elsewhere) so no card stays empty
             cards = [(p, "prov_text") for p in prov[:3]] + [(p, "prov_text_else") for p in (dem.get("elsewhere") or [])][:max(0, 3 - len(prov))]
             for i in range(3):
