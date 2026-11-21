@@ -51,6 +51,9 @@ EN = {
     (14, "story2_text"): ["Angelico S., CMRP", "Vibration analyst, ISO Category III", "CMRP and career positioning completed with us",
                           "7 interviews and 2 job offers", "within a month of completing the program"],
     (16, "step2_text"): ["Confirm with a $200 deposit and choose your start date."],
+    (16, "step1_text"): ["Unlock your $500 discount", "It applies to all three options, during the debrief."],
+    (16, "cta_text"): ["Book your 15-minute roadmap debrief", "Use the booking link in the email that came with this roadmap."],
+    (17, "outro_title"): "We look forward to your roadmap debrief.",
 }
 
 # Layout from Christian's edited deck (EMU): (slide, shape) -> (top, height); None keeps the value.
@@ -201,10 +204,10 @@ FR = {
     (15, "tier2_text"): "CMRP plus PMP, P&S-CMMS, VCAT ou MLT. Deux programmes guidés, avec la réécriture de votre CV et de votre profil LinkedIn.",
     (16, "eyebrow"): "15 · PROCHAINE ÉTAPE",
     (16, "title"): "La prochaine étape la plus logique",
-    (16, "step1_text"): ["Débloquez votre rabais de 500\u00a0$", "Il s'applique aux trois options et est confirmé lors de la revue."],
+    (16, "step1_text"): ["Débloquez votre rabais de 500\u00a0$", "Il s'applique aux trois options, pendant le débriefing."],
     (16, "step2_text"): ["Confirmez avec un dépôt de 200\u00a0$ et choisissez votre date de début."],
-    (16, "cta_text"): ["Réservez votre revue de feuille de route de 15 minutes", "Utilisez le lien de réservation dans le courriel qui accompagne cette feuille de route."],
-    (17, "outro_title"): "Au plaisir d'échanger avec vous lors de votre revue.",
+    (16, "cta_text"): ["Réservez votre débriefing de 15 minutes", "Utilisez le lien de réservation dans le courriel qui accompagne cette feuille de route."],
+    (17, "outro_title"): "Au plaisir d'échanger lors de votre débriefing.",
     (17, "outro_text"): ["Ascend Leadership Group", "Coaching et mentorat pour les professionnels de la maintenance et de la fiabilité. Région du Grand Toronto, Canada."],
 }
 
