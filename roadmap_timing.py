@@ -38,7 +38,10 @@ def add_audio(slide, blob, name="narration"):
     from pptx.opc.constants import RELATIONSHIP_TYPE as RT
     from PIL import Image
     media = Video.from_blob(blob, "audio/mpeg", name + ".mp3")
-    media_part = slide.part.package.get_or_add_media_part(media)
+    from pptx.parts.media import MediaPart
+    # a new part each time: python-pptx's de-duplication scan fails once the deck already holds audio it did not
+    # write itself (the closing slide's sting), and every narration clip is different anyway
+    media_part = MediaPart.new(slide.part.package, media)
     rid_media = slide.part.relate_to(media_part, RT.MEDIA)
     rid_audio = slide.part.relate_to(media_part, RT.AUDIO)
     buf = io.BytesIO(); Image.new("RGBA", (8, 8), (0, 0, 0, 0)).save(buf, "PNG")
@@ -213,6 +216,8 @@ def apply(prs, manifest, log=None):
     by = {int(m["slide"]): m for m in (manifest or [])}
     slides = list(prs.slides)
     for n, slide in enumerate(slides, 1):
+        if any(sh.name == "closing_logo" for sh in slide.shapes):
+            continue   # the branded closing slide carries its own sting and timing (tools/add_closing.py)
         m = by.get(n)
         if not m:
             retime(slide, [k * 900 for k in range(30)])

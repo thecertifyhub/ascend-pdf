@@ -281,4 +281,7 @@ if __name__ == "__main__":
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     make(src, "EN", os.path.join(here, "templates", "roadmap_en.pptx"))
     make(src, "FR", os.path.join(here, "templates", "roadmap_fr.pptx"))
+    import add_closing   # branded closing slide (logo reveal and sting) at the end of both templates
+    add_closing.add(os.path.join(here, "templates", "roadmap_en.pptx"), "EN")
+    add_closing.add(os.path.join(here, "templates", "roadmap_fr.pptx"), "FR")
     print("templates written")
