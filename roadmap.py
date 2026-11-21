@@ -97,6 +97,7 @@ TXT = {
         "cops_source": "Source: Canadian Occupational Projection System (COPS), Employment and Social Development Canada, projections {period} for NOC {code}.",
         "prov_title": "A role employers are looking for",
         "prov_text": "Job Bank outlook {rin}, {period}",
+        "prov_text_else": "Elsewhere in Canada: Job Bank outlook {rin}, {period}",
         "prov_concl": "Job Bank rates the outlook for this occupation by province.\nWhere it is good, employers compete for qualified people. A recognized credential is how they recognize you as one of them.",
         "prov_source": "Source: Job Bank outlook ratings (Government of Canada), {period}, NOC {code}.",
         "cert_none": "{cred}. No maintenance and reliability credential yet.",
@@ -148,6 +149,7 @@ TXT = {
         "cops_source": "Source : Système de projection des professions au Canada (SPPC), Emploi et Développement social Canada, projections {period} pour la CNP {code}.",
         "prov_title": "Un poste que les employeurs recherchent",
         "prov_text": "Perspectives de Guichet-Emplois {rin}, {period}",
+        "prov_text_else": "Ailleurs au Canada : perspectives de Guichet-Emplois {rin}, {period}",
         "prov_concl": "Guichet-Emplois évalue les perspectives de cette profession par province.\nLà où elles sont bonnes, les employeurs se disputent les personnes qualifiées. Une certification reconnue leur permet de vous identifier comme l'une d'elles.",
         "prov_source": "Source : cotes des perspectives d'emploi de Guichet-Emplois (gouvernement du Canada), {period}, CNP {code}.",
         "cert_none": "{cred}. Aucune certification en maintenance et fiabilité pour l'instant.",
@@ -413,13 +415,16 @@ def build(job):
             set_lines(s4["source_text"], T["cops_source"].format(period=fmt_period(nat["period"], lang), code=tgt_code))
         elif prov:
             set_lines(s4["title"], T["prov_title"])
+            # the lead's provinces first, then the best-rated other provinces (demand.elsewhere) so no card stays empty
+            cards = [(p, "prov_text") for p in prov[:3]] + [(p, "prov_text_else") for p in (dem.get("elsewhere") or [])][:max(0, 3 - len(prov))]
             for i in range(3):
-                if i < len(prov):
-                    p = prov[i]
+                if i < len(cards):
+                    p, key = cards[i]
                     set_lines(s4[f"d{i}_stat"], re.sub(r"^.*\((\d) of 5\)$", r"\1 / 5", p["conclusion"]))
-                    set_lines(s4[f"d{i}_text"], T["prov_text"].format(rin=REGION_IN[lang].get(p["geography"], p["geography"]), period=fmt_period(p["period"], lang)))
+                    set_lines(s4[f"d{i}_text"], T[key].format(rin=REGION_IN[lang].get(p["geography"], p["geography"]), period=fmt_period(p["period"], lang)))
                 else:
-                    hide(s4[f"d{i}_stat"]); hide(s4[f"d{i}_text"])
+                    for part in ("card", "line", "stat", "text"):
+                        hide(s4[f"d{i}_{part}"])
             set_lines(s4["conclusion_text"], T["prov_concl"])
             set_lines(s4["source_text"], T["prov_source"].format(period=fmt_period(prov[0]["period"], lang), code=tgt_code))
         else:
