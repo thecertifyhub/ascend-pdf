@@ -154,7 +154,7 @@ TXT = {
         "bottom_none": "Le chemin est clair : bâtir l'expertise, structurer l'expérience que vous avez déjà, et la prouver par une certification reconnue.",
         "score": "{s}/10", "status": {"red": "À RENFORCER", "yellow": "EN PROGRÈS", "green": "EN BONNE VOIE"},
         "invest_title": "Trois façons de devenir {role} plus vite avec nous",
-        "money": lambda v, cents=False: (("{:,.2f}" if cents else "{:,.0f}").format(v).replace(",", "\u00a0").replace(".", ",")) + "\u00a0$",
+        "money": lambda v, cents=False: (("{:,.2f}" if cents and round(v, 2) != int(v) else "{:,.0f}").format(v).replace(",", "\u00a0").replace(".", ",")) + "\u00a0$",
         "sub": "{amt} après le rabais de {disc}",
         "save": "ÉCONOMIE {amt}",
         "pay_std": "Autonome et guidé complet\nDépôt de {dep}, puis 6 paiements aux deux semaines",
