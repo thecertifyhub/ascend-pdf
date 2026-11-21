@@ -516,7 +516,29 @@ def build(job):
     return out.getvalue(), {"slides": len(prs.slides), "dropped": drop, "notes": notes, "lang": lang}
 
 
+def _strip_narration(pptx_bytes):
+    """The PDF handout carries no audio: drop the narration objects (and their timing) before converting."""
+    import io
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+    prs = Presentation(io.BytesIO(pptx_bytes))
+    hit = False
+    for s in prs.slides:
+        sld = s._element
+        for pic in list(sld.iter(qn("p:pic"))):
+            if pic.find(".//" + qn("a:audioFile")) is not None:
+                pic.getparent().remove(pic); hit = True
+        t = sld.find(qn("p:timing"))
+        if hit and t is not None:
+            sld.remove(t)
+    if not hit:
+        return pptx_bytes
+    out = io.BytesIO(); prs.save(out)
+    return out.getvalue()
+
+
 def to_pdf(pptx_bytes):
+    pptx_bytes = _strip_narration(pptx_bytes)
     with tempfile.TemporaryDirectory() as d:
         src = os.path.join(d, "roadmap.pptx")
         with open(src, "wb") as f:
