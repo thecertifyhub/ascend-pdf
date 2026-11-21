@@ -121,7 +121,7 @@ TXT = {
         "roi": "The guided program pays for itself in {a} to {b} months in your new role.",
         "roi_one": "The guided program pays for itself in about {a} month{s} in your new role.",
         "roi_band": ["The {disc} discount is offered during your 15-minute roadmap debrief, which we invite you to book as soon as you finish this presentation.", "Based on the wage gap shown earlier. Prices in {cur}. Payment plans available."],
-        "step0": "Book your 15-minute roadmap debrief\nBy {date}. We answer your questions and confirm your path.",
+        "step0": "Book your 15-minute roadmap debrief\nRight after this presentation. We answer your questions and confirm your path.",
         "kstat": lambda a, b: (f"${a}K" if a == b else f"${a}K to ${b}K"),
     },
     "FR": {
@@ -177,7 +177,7 @@ TXT = {
         "roi": "Le programme guidé est rentabilisé en {a} à {b} mois dans votre nouveau poste.",
         "roi_one": "Le programme guidé est rentabilisé en environ {a} mois dans votre nouveau poste.",
         "roi_band": ["Le rabais de {disc} vous est offert pendant votre débriefing de 15 minutes, que nous vous invitons à réserver dès la fin de cette présentation.", "Selon l'écart salarial présenté plus tôt. Prix en {cur}. Plans de paiement disponibles."],
-        "step0": "Réservez votre débriefing de 15 minutes\nAvant le {date}. Nous répondons à vos questions et confirmons votre parcours.",
+        "step0": "Réservez votre débriefing de 15 minutes\nDès la fin de cette présentation. Nous répondons à vos questions et confirmons votre parcours.",
         "kstat": lambda a, b: (f"{a}\u00a0k$" if a == b else f"{a}\u00a0k$ à {b}\u00a0k$"),
     },
 }
@@ -516,7 +516,8 @@ def build(job):
         para.space_after = Pt(0); para.space_before = Pt(10 if k else 0)   # clear gap between the band's lines
 
     # 16 next step
-    set_lines(S[15]["step0_text"], T["step0"].format(date=fmt_date(today + datetime.timedelta(days=7), lang)))
+    # book right after the video (the deposit deadline is given during the debrief, not in the video)
+    set_lines(S[15]["step0_text"], T["step0"].split("\n"))
 
     # narration: one clip per slide, reveals timed to the words, auto-advance (when the voice manifest is there)
     import roadmap_timing
