@@ -124,26 +124,39 @@ async function sign(path: string) {
   return data.signedUrl;
 }
 
-/** Standard clips for a language at the current template version (recorded once). */
+/** Standard clips for a language at the current template version. Recorded once; when a template text changes, only the
+ *  slides whose text changed are recorded again (credits). force = record all ten. */
 async function standard(lang: Lang, s: any, log: any[], force = false) {
   const { T, version } = await templates(lang);
-  const { data: have } = await sb.from("roadmap_audio").select("slide,path,ms,clicks").is("request_id", null).eq("language", lang).eq("version", version);
-  if (!force && (have ?? []).length === 10) return have!;
+  const { data: have } = await sb.from("roadmap_audio").select("slide,path,ms,clicks,text").is("request_id", null).eq("language", lang).eq("version", version);
+  const st = standardTexts(T);
+  const byslide = new Map((have ?? []).map((r: any) => [r.slide, r]));
+  const todo = force || (have ?? []).length !== st.length ? st : st.filter((x) => byslide.get(x.slide)?.text !== markers(x.text).clean);
+  if (!todo.length) return have!;
   const voice = lang === "FR" ? s.roadmap_voice_id_fr : s.roadmap_voice_id;
   if (!voice) throw new Error(`no roadmap voice set for ${lang} (roadmap_machine_settings)`);
-  const st = standardTexts(T);
-  const clips = [...await voicePiece(st.filter((x) => x.slide <= 9), voice, s, log), ...await voicePiece(st.filter((x) => x.slide >= 11), voice, s, log)];
-  await sb.from("roadmap_audio").delete().is("request_id", null).eq("language", lang).eq("version", version);
+  // one ElevenLabs request per run of consecutive slides (7-9, 11-17), only for the slides to record
+  const runs: SlideText[][] = [];
+  for (const x of todo) {
+    const last = runs[runs.length - 1];
+    if (last && STANDARD_RUN(last[last.length - 1].slide) === STANDARD_RUN(x.slide)) last.push(x); else runs.push([x]);
+  }
+  const clips: any[] = [];
+  for (const r of runs) clips.push(...await voicePiece(r, voice, s, log));
+  log.push({ step: "standard", lang, version, recorded: clips.map((c) => c.slide) });
   const rows = [];
   for (const c of clips) {
     const path = `standard/${lang}/v${version}/s${String(c.slide).padStart(2, "0")}.mp3`;
     await store(path, c.bytes);
     rows.push({ request_id: null, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length });
   }
+  await sb.from("roadmap_audio").delete().is("request_id", null).eq("language", lang).eq("version", version).in("slide", rows.map((r) => r.slide));
   const { error } = await sb.from("roadmap_audio").insert(rows);
   if (error) throw new Error("roadmap_audio: " + error.message);
-  return rows;
+  const { data: all } = await sb.from("roadmap_audio").select("slide,path,ms,clicks,text").is("request_id", null).eq("language", lang).eq("version", version);
+  return all!;
 }
+const STANDARD_RUN = (n: number) => (n <= 9 ? 0 : 1);
 
 async function voiceRequest(id: string) {
   const log: any[] = [];
@@ -204,7 +217,7 @@ Deno.serve(async (req) => {
     // @ts-ignore EdgeRuntime is provided by the Supabase runtime
     EdgeRuntime.waitUntil((async () => {
       const log: any[] = [];
-      try { await standard(lang, await settings(), log, true); }
+      try { await standard(lang, await settings(), log, body.force === true); }
       catch (e) { log.push({ error: String((e as Error)?.message ?? e) }); }
       await sb.from("roadmap_machine_settings").update({ standard_log: { lang, at: new Date().toISOString(), log } }).eq("id", 1);
     })());
