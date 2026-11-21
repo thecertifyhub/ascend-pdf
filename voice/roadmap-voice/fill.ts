@@ -132,6 +132,7 @@ const listJoin = (xs: string[], lang: Lang) => xs.length < 2 ? (xs[0] ?? "")
 function fill(t: string, v: Record<string, string>): string {
   return t.replace(/\{(\w+)\}/g, (_, k) => (k in v ? v[k] : `{${k}}`)).replace(/\s+([.,])/g, "$1").replace(/ {2,}/g, " ")
     .replace(/([.!?] (?:\[\[\d+\]\])*)(\p{Ll})/gu, (_, a, c) => a + c.toUpperCase())   // a sentence starts with a capital
+    .replace(/\bc'est (les|des) /g, "ce sont $1 ")   // FR plural: "ce sont les affaires et la gestion"
     .trim();
 }
 

@@ -106,7 +106,8 @@ TXT = {
         "cert_none": "{cred}. No maintenance and reliability credential yet.",
         "cert_none_bare": "No maintenance and reliability credential yet.",
         "cert_progress": "{cred}. Maintenance and reliability certification in progress.",
-        "chip": {"on_track": "On track", "in_progress": "In progress", "not_started": "Not started"},
+        "chip": {"on_track": "In place", "in_progress": "In progress", "not_started": "To develop"},
+        "chip_cert_missing": "To obtain",
         "bottom_both": "Your expertise and experience already meet the bar. A recognized certification makes them visible to employers.",
         "bottom_one": "Structured learning and a recognized certification close the rest, and make your profile visible to employers.",
         "bottom_none": "Build the expertise, structure your experience, and prove it with a recognized certification.",
@@ -161,7 +162,8 @@ TXT = {
         "cert_none": "{cred}. Aucune certification en maintenance et fiabilité pour l'instant.",
         "cert_none_bare": "Aucune certification en maintenance et fiabilité pour l'instant.",
         "cert_progress": "{cred}. Certification en maintenance et fiabilité en cours.",
-        "chip": {"on_track": "En bonne voie", "in_progress": "En cours", "not_started": "Non commencée"},
+        "chip": {"on_track": "Acquise", "in_progress": "En cours", "not_started": "À développer"},
+        "chip_cert_missing": "À obtenir",
         "bottom_both": "Votre expertise et votre expérience sont déjà au niveau. Une certification reconnue les rend visibles aux employeurs.",
         "bottom_one": "Un apprentissage structuré et une certification reconnue comblent le reste, et rendent votre profil visible aux employeurs.",
         "bottom_none": "Développez l'expertise, structurez votre expérience et démontrez-la par une certification reconnue.",
@@ -460,7 +462,9 @@ def build(job):
     for i, st in enumerate([rq.get("expertise") or "in_progress", rq.get("experience") or "in_progress", cert]):
         fill, line = CHIP[st]
         set_fill(s5[f"r{i}_chip"], fill, line)
-        set_lines(s5[f"r{i}_chip_label"], T["chip"][st]); set_run_color(s5[f"r{i}_chip_label"], line)
+        # the label says the word the narration says (Acquise / En cours / À développer; certification missing: À obtenir)
+        label = T["chip_cert_missing"] if (i == 2 and st == "not_started") else T["chip"][st]
+        set_lines(s5[f"r{i}_chip_label"], label); set_run_color(s5[f"r{i}_chip_label"], line)
     on = [rq.get("expertise"), rq.get("experience")].count("on_track")
     set_lines(s5["bottom_text"], T["bottom_both"] if on == 2 else T["bottom_one"] if on == 1 else T["bottom_none"])
 
@@ -509,7 +513,7 @@ def build(job):
         size, bold, col = styles[min(k, len(styles) - 1)]
         for r in para.runs:
             r.font.size = Pt(size); r.font.bold = bold; r.font.color.rgb = RGBColor.from_string(col)
-        para.space_after = Pt(3)
+        para.space_after = Pt(0); para.space_before = Pt(10 if k else 0)   # clear gap between the band's lines
 
     # 16 next step
     set_lines(S[15]["step0_text"], T["step0"].format(date=fmt_date(today + datetime.timedelta(days=7), lang)))
