@@ -235,7 +235,29 @@ export function personalTexts(doc: any, req: any, T: Templates, lang: Lang): Sli
     out.push({ slide: 10, text: fill(T.s10, { ...v, strongest: PILLARS[lang][hi], strong_score: words(sc[hi], lang),
       weakest: PILLARS[lang][lo], weak_score: words(sc[lo], lang), followed_by: fb }) });
   }
+  // 15 investment: with a payback, slide 15 becomes personal (the standard clip is used otherwise)
+  const pb = payback(doc);
+  if (pb && T.s15_roi) {
+    const span = pb.min === pb.max
+      ? (lang === "EN" ? `about ${enWords(pb.min)} ${pb.min === 1 ? "month" : "months"}` : `environ ${frWords(pb.min)} mois`)
+      : (lang === "EN" ? `${enWords(pb.min)} to ${enWords(pb.max)} months` : `${frWords(pb.min)} à ${frWords(pb.max)} mois`);
+    const roi = fill(T.s15_roi, { roi_range: span });
+    // right after "The prices for your region are on screen." (the sentence that opens click 4, the green band)
+    const base = T.s15, at = base.indexOf("[[4]]"), end = at < 0 ? -1 : base.indexOf(". ", at);
+    const text = end < 0 ? `${base} ${roi}` : `${base.slice(0, end + 1)} ${roi}${base.slice(end + 1)}`;
+    out.push({ slide: 15, text: fill(text, {}) });
+  }
   return out;
+}
+
+/** Months for the guided program (after the debrief discount) to pay for itself out of the monthly wage gain.
+ *  Same rule as roadmap.py payback(): ceil(price / high gain) to ceil(price / low gain). */
+export function payback(doc: any): { min: number; max: number } | null {
+  const r = doc.roi, price = Number(doc.prices?.guided ?? 3900);
+  const hi = Number(r?.monthly_gain_high), lo = Number(r?.monthly_gain_low);
+  if (!r || !(hi > 0) || !(lo > 0)) return null;
+  const min = Math.max(1, Math.ceil(price / Math.max(hi, lo))), max = Math.max(1, Math.ceil(price / Math.min(hi, lo)));
+  return { min, max };
 }
 /** second mention of a wage: "forty-two dollars" (no "an hour") */
 function wordsMoneyShort(v: number, lang: Lang) { return money(v, lang, false); }

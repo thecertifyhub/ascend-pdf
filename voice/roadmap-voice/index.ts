@@ -160,7 +160,9 @@ async function voiceRequest(id: string) {
     const { T, version } = await templates(lang);
     const voice = lang === "FR" ? s.roadmap_voice_id_fr : s.roadmap_voice_id;
     const pt = personalTexts(doc, r, T, lang);
-    const clips = [...await voicePiece(pt.filter((x) => x.slide <= 6), voice, s, log), ...await voicePiece(pt.filter((x) => x.slide === 10), voice, s, log)];
+    // pieces: slides 1-6, then slide 10 (+ slide 15 when the roadmap has a payback line)
+    const clips = [...await voicePiece(pt.filter((x) => x.slide <= 6), voice, s, log),
+      ...await voicePiece(pt.filter((x) => x.slide === 10 || x.slide === 15), voice, s, log)];
     await sb.from("roadmap_audio").delete().eq("request_id", id);
     const rows = [];
     for (const c of clips) {
@@ -170,7 +172,8 @@ async function voiceRequest(id: string) {
     }
     const { error } = await sb.from("roadmap_audio").insert(rows);
     if (error) throw new Error("roadmap_audio: " + error.message);
-    const all = [...rows, ...std].sort((a: any, b: any) => a.slide - b.slide);
+    const mine = new Set(rows.map((x) => x.slide));   // a personal clip replaces the standard one (slide 15)
+    const all = [...rows, ...std.filter((x: any) => !mine.has(x.slide))].sort((a: any, b: any) => a.slide - b.slide);
     const manifest = [];
     for (const a of all) manifest.push({ slide: a.slide, url: await sign(a.path), ms: a.ms, clicks: a.clicks });
     const { drop } = plan(doc);
