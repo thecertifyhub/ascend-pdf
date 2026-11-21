@@ -84,11 +84,14 @@ TXT = {
         "demand_nat": "{openings} openings\nexpected in Canada for this occupation, {period}.",
         "demand_prov": "{rating}\nJob Bank outlook {rin}, {period}.",
         "source": "Median hourly wages, Job Bank (Government of Canada), {periods}. {occs}. Retrieved {retrieved}.",
-        "d0_text": "job openings expected in Canada in this field, {period}",
+        "d0_text": "job openings a year in Canada in this field, on average ({period} projection)",
+        "d4_title": "A role the market needs every year",
+        "top_stat": "Up to {amt}/h",
+        "top_text": "at the top of the range for {role} {rin}, {period}.",
         "d1_text": "of those openings come from retirements, as experienced people leave",
-        "d2_text_fewer": "new job seekers expected over the same period, fewer than the openings",
-        "d2_text_more": "new job seekers expected over the same period, about as many as the openings",
-        "concl_shortage": "Federal outlook: a {c}.\nEmployers will compete for qualified people. A recognized credential is how they recognize you as one of them.",
+        "d2_text_fewer": "new job seekers a year on average, fewer than the openings",
+        "d2_text_more": "new job seekers a year on average, about as many as the openings",
+        "concl_shortage": "Federal outlook: a {c}.\nEmployers will compete for qualified people. A recognized credential is how they identify you as one of them.",
         "concl_balance": "Federal outlook: supply and demand in balance.\nEmployers can choose. A recognized credential is how you stand out among qualified candidates.",
         "cops_source": "Source: Canadian Occupational Projection System (COPS), Employment and Social Development Canada, projections {period} for NOC {code}.",
         "prov_title": "A role employers are looking for",
@@ -134,24 +137,27 @@ TXT = {
         "demand_nat": "{openings} postes\nà pourvoir prévus au Canada pour cette profession, {period}.",
         "demand_prov": "{rating}\nPerspectives de Guichet-Emplois {rin}, {period}.",
         "source": "Salaires horaires médians, Guichet-Emplois (gouvernement du Canada), {periods}. {occs}. Consulté le {retrieved}.",
-        "d0_text": "postes à pourvoir prévus au Canada dans ce domaine, {period}",
-        "d1_text": "de ces postes viennent des départs à la retraite de personnes expérimentées",
-        "d2_text_fewer": "nouveaux chercheurs d'emploi prévus sur la même période, moins que les postes à pourvoir",
-        "d2_text_more": "nouveaux chercheurs d'emploi prévus sur la même période, à peu près autant que les postes à pourvoir",
-        "concl_shortage": "Perspectives fédérales : un risque modéré de pénurie de main-d'œuvre.\nLes employeurs se disputeront les personnes qualifiées. Une certification reconnue est la façon dont ils vous reconnaissent comme l'une d'elles.",
-        "concl_balance": "Perspectives fédérales : l'offre et la demande sont en équilibre.\nLes employeurs peuvent choisir. Une certification reconnue est la façon de vous démarquer parmi les candidats qualifiés.",
+        "d0_text": "postes à pourvoir par année au Canada dans ce domaine, en moyenne (projection {period})",
+        "d4_title": "Un poste dont le marché a besoin chaque année",
+        "top_stat": "Jusqu'à {amt}/h",
+        "top_text": "dans le haut de l'échelle pour le poste de {role} {rin}, {period}.",
+        "d1_text": "de ces postes proviennent de départs à la retraite de personnes expérimentées",
+        "d2_text_fewer": "nouveaux chercheurs d'emploi par année en moyenne, moins que les postes à pourvoir",
+        "d2_text_more": "nouveaux chercheurs d'emploi par année en moyenne, à peu près autant que les postes à pourvoir",
+        "concl_shortage": "Perspectives fédérales : un risque modéré de pénurie de main-d'œuvre.\nLes employeurs devront se disputer les personnes qualifiées. Une certification reconnue leur permet de vous identifier comme l'une d'elles.",
+        "concl_balance": "Perspectives fédérales : l'offre et la demande sont en équilibre.\nLes employeurs peuvent choisir. Une certification reconnue vous permet de vous démarquer parmi les candidats qualifiés.",
         "cops_source": "Source : Système de projection des professions au Canada (SPPC), Emploi et Développement social Canada, projections {period} pour la CNP {code}.",
         "prov_title": "Un poste que les employeurs recherchent",
         "prov_text": "Perspectives de Guichet-Emplois {rin}, {period}",
-        "prov_concl": "Guichet-Emplois évalue les perspectives de cette profession par province.\nLà où elles sont bonnes, les employeurs se disputent les personnes qualifiées. Une certification reconnue est la façon dont ils vous reconnaissent comme l'une d'elles.",
+        "prov_concl": "Guichet-Emplois évalue les perspectives de cette profession par province.\nLà où elles sont bonnes, les employeurs se disputent les personnes qualifiées. Une certification reconnue leur permet de vous identifier comme l'une d'elles.",
         "prov_source": "Source : cotes des perspectives d'emploi de Guichet-Emplois (gouvernement du Canada), {period}, CNP {code}.",
         "cert_none": "{cred}. Aucune certification en maintenance et fiabilité pour l'instant.",
         "cert_none_bare": "Aucune certification en maintenance et fiabilité pour l'instant.",
         "cert_progress": "{cred}. Certification en maintenance et fiabilité en cours.",
         "chip": {"on_track": "En bonne voie", "in_progress": "En cours", "not_started": "Non commencée"},
-        "bottom_both": "Votre expertise et votre expérience atteignent déjà le niveau attendu. Une certification reconnue est la pièce qui les rend visibles aux employeurs.",
-        "bottom_one": "Vous êtes plus près que vous ne le pensez. Un apprentissage structuré et une certification reconnue comblent le reste, et le rendent visible aux employeurs.",
-        "bottom_none": "Le chemin est clair : bâtir l'expertise, structurer l'expérience que vous avez déjà, et la prouver par une certification reconnue.",
+        "bottom_both": "Votre expertise et votre expérience atteignent déjà le niveau attendu. Une certification reconnue est l'élément qui les rendra visibles aux employeurs.",
+        "bottom_one": "Vous êtes plus près du but que vous ne le pensez. Un apprentissage structuré et une certification reconnue feront le reste, et rendront votre profil visible aux employeurs.",
+        "bottom_none": "Le chemin est clair : développer l'expertise, structurer l'expérience que vous avez déjà, et la démontrer par une certification reconnue.",
         "score": "{s}/10", "status": {"red": "À RENFORCER", "yellow": "EN PROGRÈS", "green": "EN BONNE VOIE"},
         "invest_title": "Trois façons de devenir {role} plus vite avec nous",
         "money": lambda v, cents=False: (("{:,.2f}" if cents and round(v, 2) != int(v) else "{:,.0f}").format(v).replace(",", "\u00a0").replace(".", ",")) + "\u00a0$",
@@ -227,6 +233,20 @@ def set_lines(shape, text):
             p.remove(br)
 
 
+def shrink_if_long(shape, limit):
+    """Second paragraph (the value) gets a smaller font when it is longer than the box comfortably holds."""
+    ps = shape.text_frame.paragraphs
+    if len(ps) < 2 or len(ps[1].text) <= limit:
+        return
+    factor = 0.85 if len(ps[1].text) <= limit * 1.5 else 0.76
+    for r in ps[1].runs:
+        rpr = r._r.find(qn("a:rPr"))
+        if rpr is not None and rpr.get("sz"):
+            rpr.set("sz", str(int(int(rpr.get("sz")) * factor)))
+        elif r.font.size:
+            r.font.size = int(r.font.size * factor)
+
+
 def set_run_color(shape, hex_):
     for p in shape.text_frame.paragraphs:
         for r in p.runs:
@@ -286,13 +306,25 @@ def build(job):
     # 1 cover
     set_lines(S[0]["title"], [T["path_to"], role])
     role_in = role if lang == "EN" else role[:1].lower() + role[1:]
-    set_lines(S[0]["prepared_text"], f"{T['prepared'].format(name=name)} | {fmt_date(today, lang)}".split(" | "))
+    pt = S[0]["prepared_text"]
+    set_lines(pt, [T["prepared"].format(name=""), fmt_date(today, lang)])
+    r0 = pt.text_frame.paragraphs[0].runs[0]
+    rn = copy.deepcopy(r0._r); r0._r.addnext(rn)
+    rn.find(qn("a:t")).text = name
+    rpr = rn.find(qn("a:rPr"))
+    if rpr is None:
+        rpr = rn.makeelement(qn("a:rPr"), {}); rn.insert(0, rpr)
+    rpr.set("b", "1")
+    if rpr.get("sz"):
+        rpr.set("sz", str(int(int(rpr.get("sz")) * 1.25)))
 
     # 2 today / target
     td, tg, sv = doc.get("today") or {}, doc.get("target") or {}, doc.get("script_vars") or {}
     s2 = S[1]
-    set_lines(s2["today_role_text"], [T["role"], td.get("current_title") or ""])
-    emp = td.get("employer")
+    title_now, emp = td.get("current_title") or "", td.get("employer")
+    if not emp and ", " in title_now:
+        title_now, emp = title_now.rsplit(", ", 1)
+    set_lines(s2["today_role_text"], [T["role"], title_now])
     set_lines(s2["today_employ_text"], [T["employer"] if emp else T["location_only"], ", ".join(x for x in [emp, td.get("location")] if x)])
     exp = td.get("experience_line")
     if not exp and isinstance(td.get("years"), (int, float)) and td.get("industry"):
@@ -307,6 +339,8 @@ def build(job):
         set_lines(s2["today_creden_text"], [T["credentials"], cap(creds)])
     else:
         hide(s2["today_creden_text"])
+    for k, lim in [("today_role_text", 42), ("today_employ_text", 42), ("today_experi_text", 44), ("today_creden_text", 60)]:
+        shrink_if_long(s2[k], lim)
     set_lines(s2["target_role_text"], [T["role"], role])
     set_lines(s2["target_indust_text"], [T["industry"], cap(tg.get("industry") or sv.get("target_industry"))])
     set_lines(s2["target_locati_text"], [T["location"], cap(sv.get("target_regions") or tg.get("location"))])
@@ -356,12 +390,11 @@ def build(job):
                                                              period=fmt_period(r0["target"]["period"], lang)))
         dem = doc.get("demand") or {}
         nat, prov = dem.get("national"), dem.get("provincial") or []
-        if nat:
-            set_lines(s3["demand_text"], T["demand_nat"].format(openings=fmt_num(nat["openings"], lang), period=fmt_period(nat["period"], lang)))
-        elif prov:
-            p0 = prov[0]
-            set_lines(s3["demand_text"], T["demand_prov"].format(rating=p0["conclusion"], rin=REGION_IN[lang].get(p0["geography"], p0["geography"]),
-                                                                 period=fmt_period(p0["period"], lang)))
+        top = max(rows, key=lambda r: float((r.get("target") or {}).get("high") or 0))
+        if (top.get("target") or {}).get("high"):
+            set_lines(s3["demand_text"], [T["top_stat"].format(amt=money(float(top["target"]["high"]), True)),
+                                          T["top_text"].format(role=FAMILY[lang][wage_fam].lower(), rin=REGION_IN[lang].get(top["region"], top["region"]),
+                                                               period=fmt_period(top["target"].get("period"), lang))])
         else:
             hide(s3["demand_text"]); hide(s3["demand_panel"])
         periods = sorted({(r.get("target") or {}).get("period") for r in rows} | {(r.get("current") or {}).get("period") for r in rows if r.get("current")} - {None})
@@ -370,12 +403,13 @@ def build(job):
 
         s4 = S[3]
         if nat:
-            set_lines(s4["d0_stat"], fmt_num(nat["openings"], lang))
+            set_lines(s4["title"], T["d4_title"])
+            set_lines(s4["d0_stat"], fmt_num(round(nat["openings"] / 10, -1), lang))
             set_lines(s4["d0_text"], T["d0_text"].format(period=fmt_period(nat["period"], lang)))
             if nat.get("retirement_openings"):
                 a, b = nice_fraction(nat["retirement_openings"] / nat["openings"])
                 set_lines(s4["d1_stat"], f"{a} in {b}" if lang == "EN" else f"{a} sur {b}")
-            set_lines(s4["d2_stat"], fmt_num(nat["seekers"], lang))
+            set_lines(s4["d2_stat"], fmt_num(round(nat["seekers"] / 10, -1), lang))
             set_lines(s4["d2_text"], T["d2_text_fewer"] if nat["seekers"] < nat["openings"] * 0.95 else T["d2_text_more"])
             c = (nat.get("conclusion") or "").lower()
             set_lines(s4["conclusion_text"], T["concl_balance"] if "balance" in c else T["concl_shortage"].format(c=c))
