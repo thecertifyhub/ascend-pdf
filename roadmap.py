@@ -96,9 +96,11 @@ TXT = {
         "concl_balance": "Federal outlook: supply and demand in balance.\nEmployers can choose. A recognized credential is how you stand out among qualified candidates.",
         "cops_source": "Source: Canadian Occupational Projection System (COPS), Employment and Social Development Canada, projections {period} for NOC {code}.",
         "prov_title": "A role employers are looking for",
-        "prov_text": "Job Bank outlook {rin}, {period}",
-        "prov_text_else": "Elsewhere in Canada: Job Bank outlook {rin}, {period}",
-        "prov_concl": "Job Bank rates the outlook for this occupation by province.\nWhere it is good, employers compete for qualified people. A recognized credential is how they recognize you as one of them.",
+        "prov_text": "{n} out of 5 stars {rin}, Job Bank, {period}",
+        "prov_text_else": "Elsewhere in Canada: {n} out of 5 stars {rin}, Job Bank, {period}",
+        "stars": {5: "Very good", 4: "Good", 3: "Moderate", 2: "Limited", 1: "Very limited"},
+        "prov_concl": "Job Bank, the Government of Canada's job site, rates the job outlook of each occupation from 1 to 5 stars, province by province.\nWhere it is good, employers compete for qualified people. A recognized credential is how they recognize you as one of them.",
+        "prov_concl_mod": "Job Bank, the Government of Canada's job site, rates the job outlook of each occupation from 1 to 5 stars, province by province.\nWhere it is moderate, employers can choose. A recognized credential is how you stand out among qualified candidates.",
         "prov_source": "Source: Job Bank outlook ratings (Government of Canada), {period}, NOC {code}.",
         "cert_none": "{cred}. No maintenance and reliability credential yet.",
         "cert_none_bare": "No maintenance and reliability credential yet.",
@@ -148,9 +150,11 @@ TXT = {
         "concl_balance": "Perspectives fédérales : l'offre et la demande sont en équilibre.\nLes employeurs peuvent choisir. Une certification reconnue vous permet de vous démarquer parmi les candidats qualifiés.",
         "cops_source": "Source : Système de projection des professions au Canada (SPPC), Emploi et Développement social Canada, projections {period} pour la CNP {code}.",
         "prov_title": "Un poste que les employeurs recherchent",
-        "prov_text": "Perspectives de Guichet-Emplois {rin}, {period}",
-        "prov_text_else": "Ailleurs au Canada : perspectives de Guichet-Emplois {rin}, {period}",
-        "prov_concl": "Guichet-Emplois évalue les perspectives de cette profession par province.\nLà où elles sont bonnes, les employeurs se disputent les personnes qualifiées. Une certification reconnue leur permet de vous identifier comme l'une d'elles.",
+        "prov_text": "{n} étoiles sur 5 {rin}, Guichet-Emplois, {period}",
+        "prov_text_else": "Ailleurs au Canada : {n} étoiles sur 5 {rin}, Guichet-Emplois, {period}",
+        "stars": {5: "Très bonnes", 4: "Bonnes", 3: "Modérées", 2: "Limitées", 1: "Très limitées"},
+        "prov_concl": "Guichet-Emplois, le site d'emploi du gouvernement du Canada, note les perspectives d'emploi de chaque profession de 1 à 5 étoiles, province par province.\nLà où elles sont bonnes, les employeurs se disputent les personnes qualifiées. Une certification reconnue leur permet de vous identifier comme l'une d'elles.",
+        "prov_concl_mod": "Guichet-Emplois, le site d'emploi du gouvernement du Canada, note les perspectives d'emploi de chaque profession de 1 à 5 étoiles, province par province.\nLà où elles sont modérées, les employeurs peuvent choisir. Une certification reconnue vous permet de vous démarquer parmi les candidats qualifiés.",
         "prov_source": "Source : cotes des perspectives d'emploi de Guichet-Emplois (gouvernement du Canada), {period}, CNP {code}.",
         "cert_none": "{cred}. Aucune certification en maintenance et fiabilité pour l'instant.",
         "cert_none_bare": "Aucune certification en maintenance et fiabilité pour l'instant.",
@@ -256,6 +260,12 @@ def set_fill(shape, fill_hex, line_hex=None):
     shape.fill.solid(); shape.fill.fore_color.rgb = RGBColor.from_string(fill_hex)
     if line_hex:
         shape.line.color.rgb = RGBColor.from_string(line_hex)
+
+
+def stars_of(p):
+    """Job Bank outlook "Good (4 of 5)" -> 4 (0 when unknown)."""
+    m = re.search(r"\((\d) of 5\)", str(p.get("conclusion") or ""))
+    return int(m.group(1)) if m else 0
 
 
 def hide(shape):
@@ -420,12 +430,13 @@ def build(job):
             for i in range(3):
                 if i < len(cards):
                     p, key = cards[i]
-                    set_lines(s4[f"d{i}_stat"], re.sub(r"^.*\((\d) of 5\)$", r"\1 / 5", p["conclusion"]))
-                    set_lines(s4[f"d{i}_text"], T[key].format(rin=REGION_IN[lang].get(p["geography"], p["geography"]), period=fmt_period(p["period"], lang)))
+                    n = stars_of(p)
+                    set_lines(s4[f"d{i}_stat"], T["stars"].get(n, p["conclusion"]))
+                    set_lines(s4[f"d{i}_text"], T[key].format(n=n, rin=REGION_IN[lang].get(p["geography"], p["geography"]), period=fmt_period(p["period"], lang)))
                 else:
                     for part in ("card", "line", "stat", "text"):
                         hide(s4[f"d{i}_{part}"])
-            set_lines(s4["conclusion_text"], T["prov_concl"])
+            set_lines(s4["conclusion_text"], T["prov_concl"] if stars_of(prov[0]) >= 4 else T["prov_concl_mod"])
             set_lines(s4["source_text"], T["prov_source"].format(period=fmt_period(prov[0]["period"], lang), code=tgt_code))
         else:
             drop.append(4)

@@ -215,12 +215,27 @@ export function personalTexts(doc: any, req: any, T: Templates, lang: Lang): Sli
       out.push({ slide: 4, text: fill(balance ? T.s04_balance : T.s04_shortage, { openings_per_year: per(nat.openings),
         seekers_per_year: per(nat.seekers), retire_share: share }) });
     } else {
-      const parts = prov.slice(0, 3).map((p: any) => {
-        const rating = String(p.conclusion ?? "").replace(/\s*\(.*\)$/, "").toLowerCase();
-        return lang === "EN" ? `as ${rating} in ${REGION.EN[p.geography] ?? p.geography}`
-          : `comme ${RATING_FR[rating] ?? rating} ${FR_REGION_IN[p.geography] ?? p.geography}`;
-      });
-      out.push({ slide: 4, text: fill(T.s04_prov, { provincial_ratings: listJoin(parts, lang) }) });
+      // Job Bank stars, the lead's provinces first, then the best-rated other provinces (same cards as the slide)
+      const stars = (p: any) => Number((String(p?.conclusion ?? "").match(/\((\d) of 5\)/) ?? [])[1] ?? 0);
+      const WORD: Record<Lang, string[]> = { EN: ["", "very limited", "limited", "moderate", "good", "very good"],
+        FR: ["", "très limitées", "limitées", "modérées", "bonnes", "très bonnes"] };
+      const starTxt = (n: number) => lang === "EN" ? `with ${enWords(n)} star${n === 1 ? "" : "s"} out of five`
+        : `avec ${n === 1 ? "une étoile" : frWords(n) + " étoiles"} sur cinq`;
+      const where = (g: string) => lang === "EN" ? "in " + (REGION.EN[g] ?? g) : (FR_REGION_IN[g] ?? g);
+      const mine = prov.slice(0, 3);
+      const others = (doc.demand?.elsewhere ?? []).slice(0, Math.max(0, 3 - mine.length));
+      const lead = listJoin(mine.map((p: any) => `${WORD[lang][stars(p)]} ${where(p.geography)}, ${starTxt(stars(p))}`), lang);
+      const groups: { n: number; g: string[] }[] = [];
+      for (const p of others) { const n = stars(p); const last = groups[groups.length - 1]; if (last && last.n === n) last.g.push(p.geography); else groups.push({ n, g: [p.geography] }); }
+      // EN "good in Alberta and Saskatchewan"; FR "bonnes en Alberta et en Saskatchewan"; groups joined by ", and" / ", et"
+      const place = (g: string[]) => lang === "EN" ? "in " + listJoin(g.map((x) => REGION.EN[x] ?? x), "EN") : listJoin(g.map(where), "FR");
+      const parts = groups.map((x) => `${WORD[lang][x.n]} ${place(x.g)}, ${starTxt(x.n)}`);
+      const elsewhere = parts.length < 2 ? (parts[0] ?? "") : parts.slice(0, -1).join(", ") + (lang === "EN" ? ", and " : ", et ") + parts[parts.length - 1];
+      const ratings = lang === "EN"
+        ? `[[1]]For this role, it is ${lead}${elsewhere ? `, [[2]][[3]]and elsewhere in Canada, ${elsewhere}` : ""}.`
+        : `[[1]]Pour ce poste, elles sont ${lead}${elsewhere ? `, [[2]][[3]]et ailleurs au Canada, ${elsewhere}` : ""}.`;
+      const good = stars(mine[0]) >= 4;
+      out.push({ slide: 4, text: fill((good ? T.s04_prov : T.s04_prov_moderate) ?? T.s04_prov, { ratings }) });
     }
   }
   // 5 requirements
