@@ -8,7 +8,9 @@ TYPES = {"pptx": "application/vnd.openxmlformats-officedocument.presentationml.p
 
 
 def _filename(req, kind):
-    base = re.sub(r"[^A-Za-z0-9]+", "_", f"{req.get('first_name', '')} {req.get('last_name', '')}".title()).strip("_")
+    import unicodedata
+    name = unicodedata.normalize("NFKD", f"{req.get('first_name', '')} {req.get('last_name', '')}").encode("ascii", "ignore").decode()
+    base = re.sub(r"[^A-Za-z0-9]+", "_", name.title()).strip("_")  # Hervé -> Herve, never Herv
     return f"Ascend_Roadmap_{base}.{kind}"
 
 
