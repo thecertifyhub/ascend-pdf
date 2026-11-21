@@ -5,11 +5,14 @@ from the approved benchmark deck. Run once whenever the benchmark design changes
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pptx import Presentation
+from pptx.util import Pt
+from pptx.dml.color import RGBColor
+from pptx.oxml.ns import qn
 import roadmap
 
 SCRUB = {  # personal fields reset to neutral placeholders (overwritten at build time)
     "EN": {
-        "prepared_text": ["Prepared for First Last", "Month D, YYYY"],
+        "prepared_text": ["Prepared for", "First Last", "Month D, YYYY"],
         "footer_prepared": "Prepared for First Last",
         "today_role_text": ["ROLE", "Current role"], "today_employ_text": ["EMPLOYER AND LOCATION", "Employer, City"],
         "today_experi_text": ["EXPERIENCE", "Years of experience"], "today_creden_text": ["CREDENTIALS", "Credentials"],
@@ -23,7 +26,7 @@ SCRUB = {  # personal fields reset to neutral placeholders (overwritten at build
     },
 }
 SCRUB["FR"] = {
-    "prepared_text": ["Préparé pour Prénom Nom", "J mois AAAA"],
+    "prepared_text": ["Préparé pour", "Prénom Nom", "J mois AAAA"],
     "footer_prepared": "Préparé pour Prénom Nom",
     "today_role_text": ["POSTE", "Poste actuel"], "today_employ_text": ["EMPLOYEUR ET LIEU", "Employeur, ville"],
     "today_experi_text": ["EXPÉRIENCE", "Années d'expérience"], "today_creden_text": ["TITRES ET CERTIFICATIONS", "Titres"],
@@ -35,6 +38,52 @@ SCRUB["FR"] = {
     "g0_label": "Écart un", "g1_label": "Écart deux", "g2_label": "Écart trois",
     "g0_text": "Texte de l'écart.", "g1_text": "Texte de l'écart.", "g2_text": "Texte de l'écart.",
 }
+
+# English static text changed after the benchmark (Christian's review, Nov 21)
+EN = {
+    (7, "k2_text"): ["Deliberate career positioning", "A resume, LinkedIn profile and story that present you as the best candidate."],
+    (12, "a1_text"): ["02", "Certification readiness", "A structured method to pass the certification exam on the first attempt."],
+    (12, "a2_text"): ["03", "Professional brand and market positioning", "A resume, LinkedIn profile and story that present you as the best candidate."],
+    (12, "a3_text"): ["04", "Private coaching and mentoring", "A mentor at your side, from the start to the end of the program."],
+    **{(13, f"w{i}_text"): ["Learning", "Application", f"Mini-project {i + 1}", "Coaching"] for i in range(4)},
+    (13, "w4_text"): ["Exam simulator 1", "Professional brand development", "Coaching"],
+    (13, "w5_text"): ["Exam simulator 2", "Professional brand development", "Exam registration", "Coaching"],
+    (14, "story2_text"): ["Angelico S., CMRP", "Vibration analyst, ISO Category III", "CMRP and career positioning completed with us",
+                          "7 interviews and 2 job offers", "within a month of completing the program"],
+    (16, "step2_text"): ["Confirm with a $200 deposit and choose your start date."],
+}
+
+# Layout from Christian's edited deck (EMU): (slide, shape) -> (top, height); None keeps the value.
+LAYOUT = {
+    (1, "prepared_text"): (5156488, 1384482),
+    (2, "today_card"): (None, 4085644), (2, "target_card"): (None, 4085644),
+    (5, "bottom_text"): (5665764, 208199),
+    (9, "competent_band"): (5879592, None), (9, "competent_text"): (5879592, None),
+    (11, "stat0_stat"): (None, 460767), (11, "stat1_stat"): (None, 460767), (11, "stat2_stat"): (None, 460767),
+    (13, "commit_band"): (5486400, None), (13, "commit_text"): (5577840, None),  # room for the longer week 6 list
+    (15, "pay_band"): (None, 1232717),
+}
+FOOTER_TOP = 6604816  # footers sit closer to the bottom edge
+REMOVE = {15: ["pay_label", "pay0_text", "pay1_text", "fine_text"]}
+
+
+def add_break(shape, pidx):
+    """Soft line break at the end of paragraph pidx (an empty line before the next one)."""
+    p = shape.text_frame.paragraphs[pidx]._p
+    br = p.makeelement(qn("a:br"), {})
+    end = p.find(qn("a:endParaRPr"))
+    if end is not None: end.addprevious(br)
+    else: p.append(br)
+
+
+def style_pay_band(shape):
+    """Pay band holds text now: white Manrope, bold first line, regular last line, centered."""
+    tf = shape.text_frame
+    for i, p in enumerate(tf.paragraphs):
+        for r in p.runs:
+            r.font.name = "Manrope"; r.font.size = Pt(13 if i == 0 else 12); r.font.bold = (i == 0)
+            r.font.color.rgb = RGBColor.from_string("FFFFFF")
+
 
 # French static text, keyed by (slide number, shape name). Lines = paragraphs.
 FR = {
@@ -71,7 +120,7 @@ FR = {
     (5, "r2_req_text"): "Certification visée",
     (5, "r2_market_text"): "Une certification reconnue en maintenance et fiabilité, comme le CMRP.",
     (5, "r2_chip_label"): "Non commencée",
-    (5, "bottom_text"): "Votre expertise et votre expérience atteignent déjà le niveau attendu. Une certification reconnue est la pièce qui les rend visibles aux employeurs.",
+    (5, "bottom_text"): "Votre expertise et votre expérience sont déjà au niveau. Une certification reconnue les rend visibles aux employeurs.",
     (6, "eyebrow"): "05 · LES ÉCARTS À COMBLER",
     (6, "title"): "Ce qui vous sépare du poste",
     (6, "gap_note_text"): "Aucun de ces écarts n'est une question de talent. Ils relèvent des connaissances, de la structure et de la façon de présenter votre expérience.",
@@ -79,7 +128,7 @@ FR = {
     (7, "title"): "Trois leviers pour atteindre le poste visé",
     (7, "k0_text"): ["Des connaissances ciblées", "Apprendre exactement ce que votre poste visé exige, et l'appliquer à des cas réels."],
     (7, "k1_text"): ["Une certification reconnue", "Une reconnaissance à laquelle les employeurs font confiance, et qui atteste votre compétence avant même l'entrevue."],
-    (7, "k2_text"): ["Un positionnement de carrière réfléchi", "Un CV, un profil LinkedIn et un discours qui vous présentent comme le meilleur candidat."],
+    (7, "k2_text"): ["Un positionnement de carrière réfléchi", "Un CV, un profil LinkedIn et un récit qui vous présentent comme le meilleur candidat."],
     (7, "bridge_text"): ["La certification CMRP, une structure claire et un mentorat privé réunissent les trois."],
     (8, "eyebrow"): "07 · À PROPOS DU CMRP",
     (8, "title"): "Certified Maintenance & Reliability Professional",
@@ -117,8 +166,8 @@ FR = {
     (12, "eyebrow"): "11 · NOTRE APPROCHE",
     (12, "title"): "Quatre axes vers votre prochain poste",
     (12, "a0_text"): ["01", "Apprentissage ciblé et application", "Apprendre ce que votre poste visé exige et l'appliquer à des cas réels."],
-    (12, "a1_text"): ["02", "Préparation à la certification", "Une méthode structurée pour arriver à l'examen bien préparé, et le réussir."],
-    (12, "a2_text"): ["03", "Marque professionnelle et positionnement", "Un CV, un profil LinkedIn et un discours qui vous présentent comme le meilleur candidat."],
+    (12, "a1_text"): ["02", "Préparation à la certification", "Une méthode structurée pour réussir l'examen de certification à la première tentative."],
+    (12, "a2_text"): ["03", "Marque professionnelle et positionnement", "Un CV, un profil LinkedIn et un récit qui vous présentent comme le meilleur candidat."],
     (12, "a3_text"): ["04", "Coaching et mentorat privés", "Un mentor à vos côtés, du début à la fin du programme."],
     (13, "eyebrow"): "12 · VOS 8 SEMAINES",
     (13, "title"): "Du début du programme au jour de l'examen",
@@ -126,9 +175,9 @@ FR = {
     (13, "phase1_label"): "Semaines 5 à 7 · S'exercer et se positionner",
     (13, "phase2_label"): "Se certifier",
     **{(13, f"w{i}_label"): f"Semaine {i + 1}" for i in range(8)},
-    (13, "w0_text"): ["Leçons", "Mini-projet 1", "Coaching"], (13, "w1_text"): ["Leçons", "Mini-projet 2", "Coaching"],
-    (13, "w2_text"): ["Leçons", "Mini-projet 3", "Coaching"], (13, "w3_text"): ["Leçons", "Mini-projet 4", "Coaching"],
-    (13, "w4_text"): ["Examens blancs 1", "CV et LinkedIn", "Coaching"], (13, "w5_text"): ["Examens blancs 2", "Inscription à l'examen", "Coaching"],
+    **{(13, f"w{i}_text"): ["Apprentissage", "Applications", f"Mini-projet {i + 1}", "Coaching"] for i in range(4)},
+    (13, "w4_text"): ["Simulateur d'examen 1", "Développement de la marque professionnelle", "Coaching"],
+    (13, "w5_text"): ["Simulateur d'examen 2", "Développement de la marque professionnelle", "Inscription à l'examen", "Coaching"],
     (13, "w6_text"): ["Révision finale", "Coaching"], (13, "w7_text"): ["Examen CMRP", "Positionnement sur le marché"],
     (13, "commit_text"): "Engagement : 5 à 6 heures par semaine. Vous commencez le lundi de votre choix, et vous pouvez faire une pause si votre situation l'exige.",
     (14, "eyebrow"): "13 · PREUVES",
@@ -139,8 +188,8 @@ FR = {
                           "7 semaines", "du début au CMRP", "« Je voulais une structure. Je connaissais les concepts de maintenance, mais pas comment les assembler. »"],
     (14, "story1_text"): ["Marvin A., P.Eng., CMRP", "Première tentative sans plan : battu par le temps", "Réussi, et promu gestionnaire des installations pendant le programme",
                           "50+ min", "restantes au chronomètre à sa deuxième tentative", "« Cette fois, j'avais beaucoup de temps en réserve. »"],
-    (14, "story2_text"): ["Angelico, CMRP", "Analyste vibratoire, catégorie III ISO", "CMRP et positionnement de carrière réalisés avec nous",
-                          "7 entrevues", "dans le mois suivant la fin du programme"],
+    (14, "story2_text"): ["Angelico S., CMRP", "Analyste vibratoire, catégorie III ISO", "CMRP et positionnement de carrière réalisés avec nous",
+                          "7 entrevues et 2 offres d'emploi", "dans le mois suivant la fin du programme"],
     (15, "eyebrow"): "14 · INVESTISSEMENT",
     (15, "title"): "Trois façons d'y arriver plus vite avec nous",
     (15, "tier0_label"): "AUTONOME",
@@ -150,11 +199,10 @@ FR = {
     (15, "tier1_text"): "Tout le programme autonome, plus le positionnement de carrière, une garantie de réussite ou remboursement, et un mentor privé tout au long du programme.",
     (15, "tier2_label"): "DEUX CERTIFICATIONS COMBINÉES",
     (15, "tier2_text"): "CMRP plus PMP, P&S-CMMS, VCAT ou MLT. Deux programmes guidés, avec la réécriture de votre CV et de votre profil LinkedIn.",
-    (15, "pay_label"): "PAIEMENT",
     (16, "eyebrow"): "15 · PROCHAINE ÉTAPE",
     (16, "title"): "La prochaine étape la plus logique",
     (16, "step1_text"): ["Débloquez votre rabais de 500\u00a0$", "Il s'applique aux trois options et est confirmé lors de la revue."],
-    (16, "step2_text"): ["Confirmez avec un dépôt de 200\u00a0$", "Dans les 7 jours suivant la revue. Choisissez ensuite le lundi où vous commencez."],
+    (16, "step2_text"): ["Confirmez avec un dépôt de 200\u00a0$ et choisissez votre date de début."],
     (16, "cta_text"): ["Réservez votre revue de feuille de route de 15 minutes", "Utilisez le lien de réservation dans le courriel qui accompagne cette feuille de route."],
     (17, "outro_title"): "Au plaisir d'échanger avec vous lors de votre revue.",
     (17, "outro_text"): ["Ascend Leadership Group", "Coaching et mentorat pour les professionnels de la maintenance et de la fiabilité. Région du Grand Toronto, Canada."],
@@ -167,16 +215,30 @@ def make(src, lang, out):
         sh = roadmap.shapes_by_name(s)
         if lang == "EN" and i == 7 and "bridge_text" in sh:
             roadmap.set_lines(sh["bridge_text"], [sh["bridge_text"].text_frame.paragraphs[0].text])
-        if lang == "FR":
-            for (n, name), lines in FR.items():
-                if n == i and name in sh:
-                    roadmap.set_lines(sh[name], lines)
+        for (n, name), lines in (FR if lang == "FR" else EN).items():
+            if n == i and name in sh:
+                roadmap.set_lines(sh[name], lines)
         sc = SCRUB[lang]
         for name, lines in sc.items():
             if name in sh:
                 roadmap.set_lines(sh[name], lines)
         if "footer_left" in sh and sh["footer_left"].text_frame.text.startswith("Prepared"):
             roadmap.set_lines(sh["footer_left"], sc["footer_prepared"])
+        for n in ("footer_left", "footer_num"):
+            if n in sh:
+                sh[n].top = FOOTER_TOP
+        for (n, name), (top, h) in LAYOUT.items():
+            if n == i:
+                if top is not None: sh[name].top = top
+                if h is not None: sh[name].height = h
+        for name in REMOVE.get(i, []):
+            el = sh[name]._element; el.getparent().remove(el)
+        if i == 14:
+            for k in ("story0_text", "story1_text", "story2_text"):
+                add_break(sh[k], 1)
+        if i == 15:
+            roadmap.set_lines(sh["pay_band"], ["Payment plans available." if lang == "EN" else "Plans de paiement disponibles.", "", "Discount line."])
+            style_pay_band(sh["pay_band"])
     if lang == "FR":  # wider "save" badge on the pricing slide for the longer French label
         sh = roadmap.shapes_by_name(prs.slides[14])
         for n in ("tier2_save", "tier2_save_label"):

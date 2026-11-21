@@ -7,6 +7,7 @@ and hides or drops what a lead's case does not use, so the design and animations
 import copy, math, os, re, subprocess, tempfile, datetime
 from pptx import Presentation
 from pptx.dml.color import RGBColor
+from pptx.util import Pt
 from pptx.oxml.ns import qn
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +33,7 @@ FAMILY = {
     "EN": {"specialist": "Maintenance Specialist", "supervisor": "Maintenance Supervisor", "planner": "Maintenance Planner",
            "reliability_engineer": "Reliability Engineer", "manager": "Maintenance Manager", "asset_management": "Asset Management Specialist"},
     "FR": {"specialist": "Spécialiste en maintenance", "supervisor": "Superviseur de maintenance", "planner": "Planificateur de maintenance",
-           "reliability_engineer": "Ingénieur en fiabilité", "manager": "Gestionnaire de maintenance", "asset_management": "Spécialiste en gestion des actifs"},
+           "reliability_engineer": "Ingénieur fiabilité", "manager": "Gestionnaire de maintenance", "asset_management": "Spécialiste en gestion des actifs"},
 }
 # What employers ask for, per role family: (technical expertise, experience)
 ASK = {
@@ -80,14 +81,14 @@ TXT = {
         "range_stat": "{amt}/h",
         "invest_title_short": "Three ways to get there faster with us",
         "exp_years": "{y}+ years in {ind}",
-        "range_text": "median hourly wage for {role} {rin}, {period}.",
+        "range_text": "median hourly wage for a {role} {rin}, {period}.",
         "demand_nat": "{openings} openings\nexpected in Canada for this occupation, {period}.",
         "demand_prov": "{rating}\nJob Bank outlook {rin}, {period}.",
         "source": "Median hourly wages, Job Bank (Government of Canada), {periods}. {occs}. Retrieved {retrieved}.",
         "d0_text": "job openings a year in Canada in this field, on average ({period} projection)",
         "d4_title": "A role the market needs every year",
         "top_stat": "Up to {amt}/h",
-        "top_text": "at the top of the range for {role} {rin}, {period}.",
+        "top_text": "at the top of the range for a {role} {rin}, {period}.",
         "d1_text": "of those openings come from retirements, as experienced people leave",
         "d2_text_fewer": "new job seekers a year on average, fewer than the openings",
         "d2_text_more": "new job seekers a year on average, about as many as the openings",
@@ -102,18 +103,15 @@ TXT = {
         "cert_none_bare": "No maintenance and reliability credential yet.",
         "cert_progress": "{cred}. Maintenance and reliability certification in progress.",
         "chip": {"on_track": "On track", "in_progress": "In progress", "not_started": "Not started"},
-        "bottom_both": "Your expertise and experience already meet the bar. A recognized certification is the piece that makes them visible to employers.",
-        "bottom_one": "You are closer than you think. Structured learning and a recognized certification close the rest, and make it visible to employers.",
-        "bottom_none": "The path is clear: build the expertise, structure the experience you have, and prove it with a recognized certification.",
+        "bottom_both": "Your expertise and experience already meet the bar. A recognized certification makes them visible to employers.",
+        "bottom_one": "Structured learning and a recognized certification close the rest, and make your profile visible to employers.",
+        "bottom_none": "Build the expertise, structure your experience, and prove it with a recognized certification.",
         "score": "{s}/10", "status": {"red": "TO STRENGTHEN", "yellow": "DEVELOPING", "green": "ON TRACK"},
         "invest_title": "Three ways to get to {role} faster with us",
         "money": lambda v, cents=False: ("${:,.2f}" if cents else "${:,.0f}").format(v),
         "sub": "{amt} with the {disc} call discount",
         "save": "SAVE {amt}",
-        "pay_std": "Self-paced and full guided\n{dep} deposit, then 6 payments every two weeks",
-        "pay_af": "Self-paced and full guided\n{dep} deposit, then 4 monthly payments",
-        "pay_two": "Two certifications\nDeposit, then 9 monthly payments",
-        "fine": "Prices in {cur}. The {disc} discount requires the 15-minute roadmap review and a {dep} deposit within 7 days of it. Save {save} compared with two separate guided programs. PMP: Project Management Professional. P&S-CMMS: Planning and Scheduling. VCAT: Vibration Analyst. MLT: Machinery Lubrication Technician.",
+        "pay_band": ["Prices in {cur}. Payment plans available.", "", "The {disc} discount applies after your 15-minute roadmap review."],
         "cur": {"CAD": "Canadian dollars", "USD": "US dollars"},
         "roi": "With the wage gap shown earlier, the investment pays for itself in {a} to {b} months in your new role.",
         "roi_one": "With the wage gap shown earlier, the investment pays for itself in about {a} month(s) in your new role.",
@@ -133,14 +131,14 @@ TXT = {
         "range_stat": "{amt}/h",
         "invest_title_short": "Trois façons d'y arriver plus vite avec nous",
         "exp_years": "Plus de {y} ans en {ind}",
-        "range_text": "salaire horaire médian pour le poste de {role} {rin}, {period}.",
+        "range_text": "salaire horaire médian pour le poste {de_role} {rin}, {period}.",
         "demand_nat": "{openings} postes\nà pourvoir prévus au Canada pour cette profession, {period}.",
         "demand_prov": "{rating}\nPerspectives de Guichet-Emplois {rin}, {period}.",
         "source": "Salaires horaires médians, Guichet-Emplois (gouvernement du Canada), {periods}. {occs}. Consulté le {retrieved}.",
         "d0_text": "postes à pourvoir par année au Canada dans ce domaine, en moyenne (projection {period})",
         "d4_title": "Un poste dont le marché a besoin chaque année",
         "top_stat": "Jusqu'à {amt}/h",
-        "top_text": "dans le haut de l'échelle pour le poste de {role} {rin}, {period}.",
+        "top_text": "dans le haut de l'échelle pour le poste {de_role} {rin}, {period}.",
         "d1_text": "de ces postes proviennent de départs à la retraite de personnes expérimentées",
         "d2_text_fewer": "nouveaux chercheurs d'emploi par année en moyenne, moins que les postes à pourvoir",
         "d2_text_more": "nouveaux chercheurs d'emploi par année en moyenne, à peu près autant que les postes à pourvoir",
@@ -155,18 +153,15 @@ TXT = {
         "cert_none_bare": "Aucune certification en maintenance et fiabilité pour l'instant.",
         "cert_progress": "{cred}. Certification en maintenance et fiabilité en cours.",
         "chip": {"on_track": "En bonne voie", "in_progress": "En cours", "not_started": "Non commencée"},
-        "bottom_both": "Votre expertise et votre expérience atteignent déjà le niveau attendu. Une certification reconnue est l'élément qui les rendra visibles aux employeurs.",
-        "bottom_one": "Vous êtes plus près du but que vous ne le pensez. Un apprentissage structuré et une certification reconnue feront le reste, et rendront votre profil visible aux employeurs.",
-        "bottom_none": "Le chemin est clair : développer l'expertise, structurer l'expérience que vous avez déjà, et la démontrer par une certification reconnue.",
+        "bottom_both": "Votre expertise et votre expérience sont déjà au niveau. Une certification reconnue les rend visibles aux employeurs.",
+        "bottom_one": "Un apprentissage structuré et une certification reconnue comblent le reste, et rendent votre profil visible aux employeurs.",
+        "bottom_none": "Développez l'expertise, structurez votre expérience et démontrez-la par une certification reconnue.",
         "score": "{s}/10", "status": {"red": "À RENFORCER", "yellow": "EN PROGRÈS", "green": "EN BONNE VOIE"},
         "invest_title": "Trois façons de devenir {role} plus vite avec nous",
         "money": lambda v, cents=False: (("{:,.2f}" if cents and round(v, 2) != int(v) else "{:,.0f}").format(v).replace(",", "\u00a0").replace(".", ",")) + "\u00a0$",
         "sub": "{amt} après le rabais de {disc}",
         "save": "ÉCONOMIE {amt}",
-        "pay_std": "Autonome et guidé complet\nDépôt de {dep}, puis 6 paiements aux deux semaines",
-        "pay_af": "Autonome et guidé complet\nDépôt de {dep}, puis 4 paiements mensuels",
-        "pay_two": "Deux certifications\nDépôt, puis 9 paiements mensuels",
-        "fine": "Prix en {cur}. Le rabais de {disc} requiert la revue de feuille de route de 15 minutes et un dépôt de {dep} dans les 7 jours qui suivent. Économisez {save} par rapport à deux programmes guidés distincts. PMP : Project Management Professional. P&S-CMMS : planification et ordonnancement. VCAT : analyste vibratoire. MLT : technicien en lubrification de machines.",
+        "pay_band": ["Prix en {cur}. Plans de paiement disponibles.", "", "Le rabais de {disc} s'applique après votre revue de feuille de route de 15 minutes."],
         "cur": {"CAD": "dollars canadiens", "USD": "dollars américains"},
         "roi": "Avec l'écart salarial présenté plus tôt, l'investissement est rentabilisé en {a} à {b} mois dans votre nouveau poste.",
         "roi_one": "Avec l'écart salarial présenté plus tôt, l'investissement est rentabilisé en environ {a} mois dans votre nouveau poste.",
@@ -271,6 +266,11 @@ def drop_slides(prs, numbers):
         sld_ids.remove(el)
 
 
+def de_(x):
+    """French 'de' with elision: d'ingénieur, de superviseur."""
+    return ("d'" if x[:1].lower() in "aeéèêiïoôuh" else "de ") + x
+
+
 def cap(s):
     s = (s or "").strip()
     s = re.sub(r"^(a|an|the|un|une|le|la|les)\s+", "", s, flags=re.I)
@@ -307,16 +307,11 @@ def build(job):
     set_lines(S[0]["title"], [T["path_to"], role])
     role_in = role if lang == "EN" else role[:1].lower() + role[1:]
     pt = S[0]["prepared_text"]
-    set_lines(pt, [T["prepared"].format(name=""), fmt_date(today, lang)])
-    r0 = pt.text_frame.paragraphs[0].runs[0]
-    rn = copy.deepcopy(r0._r); r0._r.addnext(rn)
-    rn.find(qn("a:t")).text = name
-    rpr = rn.find(qn("a:rPr"))
-    if rpr is None:
-        rpr = rn.makeelement(qn("a:rPr"), {}); rn.insert(0, rpr)
-    rpr.set("b", "1")
-    if rpr.get("sz"):
-        rpr.set("sz", str(int(int(rpr.get("sz")) * 1.25)))
+    set_lines(pt, [T["prepared"].format(name="").strip(), name, fmt_date(today, lang)])
+    for r in pt.text_frame.paragraphs[1].runs:  # the name: bold, 20 pt
+        r.font.bold = True; r.font.size = Pt(20)
+    for p in pt.text_frame.paragraphs[1:]:
+        p.space_before = Pt(8)
 
     # 2 today / target
     td, tg, sv = doc.get("today") or {}, doc.get("target") or {}, doc.get("script_vars") or {}
@@ -386,14 +381,14 @@ def build(job):
             r0 = rows[0]
             set_lines(s3["gap_label"], T["range_label"])
             set_lines(s3["gap_stat"], T["range_stat"].format(amt=money(float(r0["target"]["median"]), True)))
-            set_lines(s3["gap_text"], T["range_text"].format(role=FAMILY[lang][wage_fam].lower(), rin=REGION_IN[lang].get(r0["region"], r0["region"]),
+            set_lines(s3["gap_text"], T["range_text"].format(role=FAMILY[lang][wage_fam].lower(), de_role=de_(FAMILY[lang][wage_fam].lower()), rin=REGION_IN[lang].get(r0["region"], r0["region"]),
                                                              period=fmt_period(r0["target"]["period"], lang)))
         dem = doc.get("demand") or {}
         nat, prov = dem.get("national"), dem.get("provincial") or []
         top = max(rows, key=lambda r: float((r.get("target") or {}).get("high") or 0))
         if (top.get("target") or {}).get("high"):
             set_lines(s3["demand_text"], [T["top_stat"].format(amt=money(float(top["target"]["high"]), True)),
-                                          T["top_text"].format(role=FAMILY[lang][wage_fam].lower(), rin=REGION_IN[lang].get(top["region"], top["region"]),
+                                          T["top_text"].format(role=FAMILY[lang][wage_fam].lower(), de_role=de_(FAMILY[lang][wage_fam].lower()), rin=REGION_IN[lang].get(top["region"], top["region"]),
                                                                period=fmt_period(top["target"].get("period"), lang))])
         else:
             hide(s3["demand_text"]); hide(s3["demand_panel"])
@@ -478,9 +473,8 @@ def build(job):
         set_lines(s15[f"tier{i}_sub_text"], T["sub"].format(amt=money(pr[k]), disc=money(disc)))
     save = (pr["guided"] + disc) * 2 - (pr["two_certs"] + disc)
     set_lines(s15["tier2_save_label"], T["save"].format(amt=money(save)))
-    set_lines(s15["pay0_text"], (T["pay_af"] if pr.get("region") == "AF" else T["pay_std"]).format(dep=money(200)))
-    set_lines(s15["pay1_text"], T["pay_two"])
-    set_lines(s15["fine_text"], T["fine"].format(cur=T["cur"].get(pr["currency"], pr["currency"]), disc=money(disc), dep=money(200), save=money(save)))
+    cur = T["cur"].get(pr["currency"], pr["currency"])
+    set_lines(s15["pay_band"], [x.format(cur=cur, disc=money(disc)) for x in T["pay_band"]])
     roi = doc.get("roi")
     if roi:
         box = s15["title"]
