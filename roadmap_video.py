@@ -12,8 +12,8 @@ from lxml import etree
 from pptx import Presentation
 from pptx.oxml.ns import qn
 
-W, H, FPS = 1280, 720, 15   # sized for the small build server (512 MB, a fraction of a CPU)
-CHUNK = 4                 # slides rendered per LibreOffice run (memory)
+W, H, FPS = 1920, 1080, 24  # build server: 1 CPU, 2 GB
+CHUNK = 6                 # slides rendered per LibreOffice run (memory)
 FADE_S = 0.3              # reveal and slide-change crossfade
 MERGE_S = 0.35            # reveals closer than this share one picture
 NO_AUDIO_MS = 4000
