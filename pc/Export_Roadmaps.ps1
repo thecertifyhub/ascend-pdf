@@ -41,7 +41,7 @@ foreach ($it in $list.items) {
     $dest = Join-Path $dir "$($it.base).mp4"
     Invoke-WebRequest -UseBasicParsing -Uri $it.pdf_url -OutFile (Join-Path $dir "$($it.base).pdf")
     $built = [datetime]::Parse($it.built_at).ToUniversalTime()
-    if ((Test-Path $dest) -and ((Get-Item $dest).LastWriteTimeUtc -gt $built)) {
+    if ((Test-Path $dest) -and ((Get-Item $dest).LastWriteTimeUtc -gt $built) -and ((Get-Item $dest).Length -le 95MB)) {
       # exported from this same deck on an earlier run whose upload failed: upload it again, no new export
       Say 'Video already exported on an earlier run: uploading it again.'
       Copy-Item $dest $mp4w -Force
@@ -52,14 +52,20 @@ foreach ($it in $list.items) {
 
     # Open(FileName, ReadOnly, Untitled, WithWindow); CreateVideo(FileName, UseTimingsAndNarrations,
     # DefaultSlideDuration, VertResolution, FramesPerSecond, Quality)
-    $pres = $ppt.Presentations.Open($pptx, -1, 0, -1)
-    $pres.CreateVideo($mp4w, $true, 5, 1080, 30, 85)
-    # CreateVideoStatus: 1 in progress, 2 queued, 3 done, 4 failed
-    do { Start-Sleep -Seconds 5; $st = $pres.CreateVideoStatus } while ($st -eq 1 -or $st -eq 2)
-    $pres.Close()
-    if ($st -ne 3) { throw "PowerPoint could not export the video (status $st)." }
-    $mb = [math]::Round((Get-Item $mp4w).Length / 1MB)
-    Say "Video exported ($mb MB)."
+    # uploads are capped near 100 MB: quality 60 first, a lower quality only if the file is still too big
+    foreach ($q in 60, 40) {
+      if (Test-Path $mp4w) { Remove-Item $mp4w -Force }
+      $pres = $ppt.Presentations.Open($pptx, -1, 0, -1)
+      $pres.CreateVideo($mp4w, $true, 5, 1080, 30, $q)
+      # CreateVideoStatus: 1 in progress, 2 queued, 3 done, 4 failed
+      do { Start-Sleep -Seconds 5; $st = $pres.CreateVideoStatus } while ($st -eq 1 -or $st -eq 2)
+      $pres.Close()
+      if ($st -ne 3) { throw "PowerPoint could not export the video (status $st)." }
+      $mb = [math]::Round((Get-Item $mp4w).Length / 1MB)
+      Say "Video exported at quality $q ($mb MB)."
+      if ($mb -le 95) { break }
+    }
+    if ($mb -gt 95) { throw "The video is $mb MB, over the 95 MB upload limit." }
 
     Copy-Item $mp4w $dest -Force
     Say "Saved in $dir"
@@ -67,7 +73,7 @@ foreach ($it in $list.items) {
 
     $slot = Api @{ action = 'video_slot'; request_id = $it.id }
     # curl.exe (built into Windows 10/11): PowerShell 5's own upload drops large files
-    $code = & curl.exe -sS -o NUL -w '%{http_code}' -X PUT -H 'Content-Type: video/mp4' -H 'x-upsert: true' --data-binary "@$mp4w" $slot.signed_url
+    $code = & curl.exe -sS -o NUL -w '%{http_code}' -X PUT -H 'Content-Type: video/mp4' -H 'x-upsert: true' -H 'Expect:' --data-binary "@$mp4w" $slot.signed_url
     if ($LASTEXITCODE -ne 0 -or $code -notmatch '^2') { throw "Video upload failed (curl exit $LASTEXITCODE, HTTP $code)." }
     $done = Api @{ action = 'video_done'; request_id = $it.id; path = $slot.path }
     Say 'Uploaded: the lead''s page now plays this video.'
