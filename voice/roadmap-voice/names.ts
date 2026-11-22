@@ -14,7 +14,7 @@ export const COMMON: Record<Lang, string[]> = {
     + "lambert seraphin william herve lucien gilles denis andre rene robert georges henri louis martin simon victor "
     + "marie anne claire sophie nathalie isabelle christine sylvie celine julie aminata fatou mireille kyria awa grace esther").split(" "),
 };
-export const plain = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+export const plain = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 /** Should the narration say the first name? {use, say, reason}. say = what the voice reads (a respelling can replace it). */
 export function nameAuto(firstName: string, lang: Lang): { use: boolean; say: string; reason: string } {
   const first = String(firstName ?? "").trim().split(/\s+/)[0] ?? "";

@@ -20,7 +20,7 @@ const EL = "https://api.elevenlabs.io";
 const BUCKET = "roadmap-audio";
 const LEAD_S = 0.15;          // a reveal starts just before its word
 const SAME_WORD_GAP_S = 0.6;  // reveals that share a word are staggered
-const norm = (s: string) => (s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’‘]/g, "'").replace(/[^a-z0-9']+/g, "");
+const norm = (s: string) => (s ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’‘]/g, "'").replace(/[^a-z0-9']+/g, "");
 
 async function settings() {
   const { data } = await sb.from("roadmap_machine_settings").select("*").eq("id", 1).single();
@@ -124,17 +124,18 @@ async function sign(path: string) {
   return data.signedUrl;
 }
 
-/** Standard clips for a language at the current template version. Recorded once; when a template text changes, only the
- *  slides whose text changed are recorded again (credits). force = record all ten. */
+/** Standard clips for a language at the current template version. Recorded once; when a template text changes or the
+ *  language's voice changes, only the slides concerned are recorded again (credits). force = record all ten. */
 async function standard(lang: Lang, s: any, log: any[], force = false) {
   const { T, version } = await templates(lang);
-  const { data: have } = await sb.from("roadmap_audio").select("slide,path,ms,clicks,text").is("request_id", null).eq("language", lang).eq("version", version);
-  const st = standardTexts(T);
-  const byslide = new Map((have ?? []).map((r: any) => [r.slide, r]));
-  const todo = force || (have ?? []).length !== st.length ? st : st.filter((x) => byslide.get(x.slide)?.text !== markers(x.text).clean);
-  if (!todo.length) return have!;
+  const { data: have } = await sb.from("roadmap_audio").select("slide,path,ms,clicks,text,voice_id").is("request_id", null).eq("language", lang).eq("version", version);
   const voice = lang === "FR" ? s.roadmap_voice_id_fr : s.roadmap_voice_id;
   if (!voice) throw new Error(`no roadmap voice set for ${lang} (roadmap_machine_settings)`);
+  const st = standardTexts(T);
+  const byslide = new Map((have ?? []).map((r: any) => [r.slide, r]));
+  const todo = force || (have ?? []).length !== st.length ? st
+    : st.filter((x) => byslide.get(x.slide)?.text !== markers(x.text).clean || byslide.get(x.slide)?.voice_id !== voice);
+  if (!todo.length) return have!;
   // one ElevenLabs request per run of consecutive slides (7-9, 11-17), only for the slides to record
   const runs: SlideText[][] = [];
   for (const x of todo) {
@@ -148,7 +149,7 @@ async function standard(lang: Lang, s: any, log: any[], force = false) {
   for (const c of clips) {
     const path = `standard/${lang}/v${version}/s${String(c.slide).padStart(2, "0")}.mp3`;
     await store(path, c.bytes);
-    rows.push({ request_id: null, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length });
+    rows.push({ request_id: null, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice });
   }
   await sb.from("roadmap_audio").delete().is("request_id", null).eq("language", lang).eq("version", version).in("slide", rows.map((r) => r.slide));
   const { error } = await sb.from("roadmap_audio").insert(rows);
@@ -181,7 +182,7 @@ async function voiceRequest(id: string) {
     for (const c of clips) {
       const path = `${id}/s${String(c.slide).padStart(2, "0")}.mp3`;
       await store(path, c.bytes);
-      rows.push({ request_id: id, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length });
+      rows.push({ request_id: id, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice });
     }
     const { error } = await sb.from("roadmap_audio").insert(rows);
     if (error) throw new Error("roadmap_audio: " + error.message);
