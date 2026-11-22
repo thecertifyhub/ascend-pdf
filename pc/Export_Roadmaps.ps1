@@ -5,6 +5,7 @@
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[Net.ServicePointManager]::Expect100Continue = $false
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path      # ...\Roadmaps\_export
 $root = Split-Path -Parent $here                              # ...\Roadmaps
@@ -64,7 +65,9 @@ foreach ($it in $list.items) {
     }
 
     $slot = Api @{ action = 'video_slot'; request_id = $it.id }
-    Invoke-WebRequest -UseBasicParsing -Method Put -Uri $slot.signed_url -InFile $mp4w -ContentType 'video/mp4' -Headers @{ 'x-upsert' = 'true' } | Out-Null
+    # curl.exe (built into Windows 10/11): PowerShell 5's own upload drops large files
+    $code = & curl.exe -sS -o NUL -w '%{http_code}' -X PUT -H 'Content-Type: video/mp4' -H 'x-upsert: true' --data-binary "@$mp4w" $slot.signed_url
+    if ($LASTEXITCODE -ne 0 -or $code -notmatch '^2') { throw "Video upload failed (curl exit $LASTEXITCODE, HTTP $code)." }
     $done = Api @{ action = 'video_done'; request_id = $it.id; path = $slot.path }
     Say 'Uploaded: the lead''s page now plays this video.'
     Remove-Item $pptx, $mp4w -Force -ErrorAction SilentlyContinue
