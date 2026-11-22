@@ -58,29 +58,23 @@ foreach ($it in $list.items) {
     Copy-Item $mp4w $dest -Force
     Say "Saved in $dir"
 
-    # chunked upload (6 MB pieces through roadmap-pc): a single upload is cut off near 100 MB
+    # chunked upload (1 MB pieces through roadmap-pc)
     $size = (Get-Item $mp4w).Length
     $slot = Api @{ action = 'video_start'; request_id = $it.id; size = $size }
     if (-not $slot.upload_url) { throw "Could not start the upload: $($slot.error)" }
     $buf = New-Object byte[] $slot.chunk
     $chunkFile = Join-Path $work 'chunk.bin'
-    # A failed chunk is retried from the exact point the server holds, with a growing wait and, after the first
-    # failure, TLS 1.2 forced (a known Windows encryption issue with TLS 1.3). Every failure and the attempt that
-    # finally worked are logged, so the log shows the real cause.
-    $tries = @(
-      @{ wait = 0;  flags = @();                                                     label = 'normal' },
-      @{ wait = 5;  flags = @('--tls-max', '1.2', '--ssl-no-revoke', '--http1.1'); label = 'TLS 1.2 after 5 s' },
-      @{ wait = 20; flags = @('--tls-max', '1.2', '--ssl-no-revoke', '--http1.1'); label = 'TLS 1.2 after 20 s' },
-      @{ wait = 60; flags = @('--tls-max', '1.2', '--ssl-no-revoke', '--http1.1'); label = 'TLS 1.2 after 60 s' }
-    )
+    # The video goes up in 1 MB pieces. A piece that fails (this PC's connection corrupts some uploads) is sent again
+    # from the exact point the server holds, up to 8 times with growing waits. Each retry is logged.
+    $waits = @(0, 2, 5, 10, 20, 30, 60, 90)
     $fs = [IO.File]::OpenRead($mp4w)
     try {
       $off = 0
       while ($off -lt $size) {
         $ok = $false
-        foreach ($t in $tries) {
-          if ($t.wait -gt 0) {
-            Start-Sleep -Seconds $t.wait
+        foreach ($w in $waits) {
+          if ($w -gt 0) {
+            Start-Sleep -Seconds $w
             $h = Api @{ action = 'video_offset'; request_id = $it.id; upload_url = $slot.upload_url }
             if ($h.offset -ge 0) { $off = [long]$h.offset }
             if ($off -ge $size) { $ok = $true; break }
@@ -88,22 +82,20 @@ foreach ($it in $list.items) {
           [void]$fs.Seek($off, 'Begin')
           $n = $fs.Read($buf, 0, $buf.Length)
           $out = [IO.File]::Create($chunkFile); $out.Write($buf, 0, $n); $out.Close()
-          $args2 = @('-sS', '-X', 'POST', '-H', "x-key: $key", '-H', "x-upload-url: $($slot.upload_url)", '-H', "x-chunk-offset: $off",
-                     '-H', 'Content-Type: application/octet-stream', '-H', 'Expect:', '--data-binary', "@$chunkFile") + $t.flags + @($api)
+          $args2 = @('-sS', '--http1.1', '-X', 'POST', '-H', "x-key: $key", '-H', "x-upload-url: $($slot.upload_url)", '-H', "x-chunk-offset: $off",
+                     '-H', 'Content-Type: application/octet-stream', '-H', 'Expect:', '--data-binary', "@$chunkFile", $api)
           # Windows PowerShell 5 stops the script on a native program's error text when ErrorActionPreference is Stop
           $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-          $resp = (& curl.exe @args2 2>&1 | Out-String).Trim()
+          $resp = (& curl.exe @args2 2>&1 | ForEach-Object { "$_" } | Out-String).Trim()
           $code = $LASTEXITCODE
           $ErrorActionPreference = $prevEap
           try { $j = $resp | ConvertFrom-Json } catch { $j = $null }
-          if ($code -eq 0 -and $j -and $j.offset) {
-            if ($t.label -ne 'normal') { Say "  chunk at $([math]::Round($off / 1MB)) MB went through on: $($t.label)" }
-            $off = [long]$j.offset; $ok = $true; break
-          }
-          Say "  chunk at $([math]::Round($off / 1MB)) MB failed ($($t.label)): curl exit $code, $resp"
+          if ($code -eq 0 -and $j -and $j.offset) { $off = [long]$j.offset; $ok = $true; break }
+          $first = ($resp -split "`n")[0].Trim()
+          Say ("  piece at {0:N1} MB failed (curl exit {1}): {2}" -f ($off / 1MB), $code, $first)
         }
         if (-not $ok) { throw "Upload stopped at $([math]::Round($off / 1MB)) MB after every retry (see the lines above)." }
-        Write-Host ("  uploaded {0} of {1} MB" -f [math]::Round($off / 1MB), [math]::Round($size / 1MB))
+        if (($off % (10MB)) -lt $buf.Length -or $off -ge $size) { Write-Host ("  uploaded {0} of {1} MB" -f [math]::Round($off / 1MB), [math]::Round($size / 1MB)) }
       }
     } finally { $fs.Close(); Remove-Item $chunkFile -Force -ErrorAction SilentlyContinue }
     $done = Api @{ action = 'video_done'; request_id = $it.id; path = $slot.path }

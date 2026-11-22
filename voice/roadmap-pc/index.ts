@@ -3,7 +3,7 @@
 // POST {"action":"list"}                        -> roadmaps built and not yet exported by PowerPoint (not tests):
 //                                                  folder name, file base name, signed PPTX and PDF links (2 hours)
 // POST {"action":"video_slot", "request_id"}    -> an upload slot in roadmap-videos for the exported MP4
-// POST {"action":"video_start", "request_id", "size"} -> a resumable upload; then the raw 6 MB chunks are POSTed with
+// POST {"action":"video_start", "request_id", "size"} -> a resumable upload; then the raw 1 MB chunks are POSTed with
 //                                                  headers x-key, x-upload-url, x-chunk-offset
 // POST {"action":"video_offset", "request_id", "upload_url"} -> bytes the server holds (resume point)
 // POST {"action":"video_done", "request_id", "path"} -> the page now plays that video (status video_ready)
@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
   const { data: s } = await sb.from("roadmap_machine_settings").select("pc_export_key").eq("id", 1).single();
 
-  // a 6 MB chunk of the video (raw body): forwarded to the resumable upload created by "video_start".
+  // a 1 MB chunk of the video (raw body): forwarded to the resumable upload created by "video_start".
   // Large videos go up in chunks because a single upload is cut off near 100 MB.
   if (req.headers.get("x-chunk-offset") !== null) {
     if (!s?.pc_export_key || req.headers.get("x-key") !== s.pc_export_key) return json({ error: "unauthorized" }, 401);
@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     return error ? json({ error: error.message }, 500) : json({ path, signed_url: data.signedUrl });
   }
   if (b.action === "video_start") {
-    // a resumable upload for the whole file; the script then sends it in 6 MB chunks (see above)
+    // a resumable upload for the whole file; the script then sends it in 1 MB chunks (see above)
     const size = Number(b.size);
     if (!(size > 0)) return json({ error: "size required" }, 400);
     const path = `${id}/roadmap_pc_${Date.now()}.mp4`;
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     const c = await fetch(TUS, { method: "POST", headers: { ...tusHeaders, "Upload-Length": String(size), "Upload-Metadata": meta, "x-upsert": "true" } });
     const loc = c.headers.get("location"); const t = await c.text();
     if (!loc) return json({ error: `start ${c.status}: ${t.slice(0, 200)}` }, 502);
-    return json({ path, upload_url: loc, chunk: 6 * 1024 * 1024 });
+    return json({ path, upload_url: loc, chunk: 1024 * 1024 });   // 1 MB: a failed piece costs little to resend
   }
   if (b.action === "video_offset") {
     // how much of a chunked upload the server really holds (to resume exactly there after a failed chunk)
