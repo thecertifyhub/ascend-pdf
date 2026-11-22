@@ -22,10 +22,11 @@
   .player { position:relative; width:100%; aspect-ratio:16/9; background:#0f241b; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(26,64,48,.18); }
   .player video { width:100%; height:100%; display:block; background:#0f241b; }
   .hint { margin:10px 2px 0; font-size:14px; color:var(--muted); }
-  .cta { margin-top:30px; background:var(--green); color:#fff; border-radius:12px; padding:24px; display:flex; gap:20px; align-items:center; justify-content:space-between; flex-wrap:wrap; transition:box-shadow .4s; }
+  .cta { margin-top:30px; background:var(--green); color:#fff; border-radius:12px; padding:24px 26px; display:flex; flex-direction:column; align-items:flex-start; gap:16px; transition:box-shadow .4s; }
   .cta.glow { box-shadow:0 0 0 4px var(--gold); }
   .cta h2 { margin:0 0 6px; font-family:Fraunces, Georgia, serif; font-weight:600; font-size:22px; }
-  .cta p { margin:0; font-size:15px; line-height:1.5; color:#D9E6DF; max-width:470px; }
+  .cta h2 .amount { color:var(--gold); white-space:nowrap; }
+  .cta p { margin:0; font-size:15px; line-height:1.5; color:#D9E6DF; max-width:620px; }
   .btn { display:inline-block; background:var(--gold); color:var(--green); font-weight:700; font-size:16px; text-decoration:none; padding:14px 22px; border-radius:8px; white-space:nowrap; }
   .btn:hover { filter:brightness(1.05); }
   .btn[aria-disabled="true"] { background:#9fb3a8; color:#1A4030; pointer-events:none; }
@@ -80,8 +81,8 @@
       title: function (n) { return (n ? n + ", here" : "Here") + " is your roadmap"; },
       sub: function (r) { return "Where you stand today, what the market pays and looks for" + (r ? " as " + aAn(r) : "") + ", and the most logical path to get there."; },
       hint: function (m) { return "About " + m + (m > 1 ? " minutes" : " minute") + ". Book your debrief right after watching."; },
-      cta_title: "Book your 15-minute roadmap debrief",
-      cta_text: "Right after the video. We answer your questions, confirm your path and unlock your $500 discount.",
+      cta_title: "Book your debrief and unlock your $500 discount",
+      cta_text: "Right after the video. 15 minutes to answer your questions and confirm your path.",
       book: "Book my debrief",
       book_soon: "Booking link in your email",
       pdf: "Download your roadmap (PDF)",
@@ -94,8 +95,8 @@
       title: function (n) { return (n ? n + ", voici" : "Voici") + " votre feuille de route"; },
       sub: function (r) { return "O\u00f9 vous en \u00eates aujourd'hui, ce que le march\u00e9 paie et recherche" + (r ? " pour le poste de " + r : "") + ", et le chemin le plus logique pour y arriver."; },
       hint: function (m) { return "Environ " + m + (m > 1 ? " minutes" : " minute") + ". R\u00e9servez votre d\u00e9briefing d\u00e8s la fin de la vid\u00e9o."; },
-      cta_title: "R\u00e9servez votre d\u00e9briefing de 15 minutes",
-      cta_text: "D\u00e8s la fin de la vid\u00e9o. Nous r\u00e9pondons \u00e0 vos questions, confirmons votre parcours et d\u00e9bloquons votre rabais de 500\u00a0$.",
+      cta_title: "R\u00e9servez votre d\u00e9briefing et d\u00e9bloquez votre rabais de 500\u00a0$",
+      cta_text: "D\u00e8s la fin de la vid\u00e9o. 15 minutes pour r\u00e9pondre \u00e0 vos questions et confirmer votre parcours.",
       book: "R\u00e9server mon d\u00e9briefing",
       book_soon: "Lien de r\u00e9servation dans votre courriel",
       pdf: "T\u00e9l\u00e9charger votre feuille de route (PDF)",
@@ -133,7 +134,14 @@
       $("eyebrow").textContent = t.eyebrow;
       $("title").textContent = t.title(d.first_name);
       $("sub").textContent = t.sub(d.role);
-            $("cta_title").textContent = t.cta_title;
+            // the discount amount in gold inside the title
+      (function (el, txt) {
+        var m = txt.match(/(\$500|500\u00a0\$)/); el.textContent = "";
+        if (!m) { el.textContent = txt; return; }
+        var gold = document.createElement("span"); gold.className = "amount"; gold.textContent = m[0];
+        el.appendChild(document.createTextNode(txt.slice(0, m.index))); el.appendChild(gold);
+        el.appendChild(document.createTextNode(txt.slice(m.index + m[0].length)));
+      })($("cta_title"), t.cta_title);
       $("cta_text").textContent = t.cta_text;
       $("s1").textContent = t.s1; $("s2").textContent = t.s2; $("s3").textContent = t.s3;
       var book = $("book");
