@@ -12,7 +12,8 @@ from lxml import etree
 from pptx import Presentation
 from pptx.oxml.ns import qn
 
-W, H, FPS = 1920, 1080, 24
+W, H, FPS = 1280, 720, 15   # sized for the small build server (512 MB, a fraction of a CPU)
+CHUNK = 4                 # slides rendered per LibreOffice run (memory)
 FADE_S = 0.3              # reveal and slide-change crossfade
 MERGE_S = 0.35            # reveals closer than this share one picture
 NO_AUDIO_MS = 4000
@@ -109,35 +110,41 @@ def _remove_ids(slide, ids):
 
 
 def render_states(stripped_pptx, plans, workdir):
-    """PNG paths per slide per state."""
+    """PNG paths per slide per state. Rendered CHUNK slides at a time so LibreOffice stays small."""
+    import gc
     import fitz
-    prs = Presentation(io.BytesIO(stripped_pptx))
-    originals = list(prs.slides)
-    index = []
-    for i, (slide, p) in enumerate(zip(originals, plans)):
-        for k, (t, hidden) in enumerate(states(p)):
-            d = _dup(prs, slide)
-            _remove_ids(d, hidden)
-            index.append((i, k))
-    sldIdLst = prs.slides._sldIdLst
-    for sid in list(sldIdLst)[:len(originals)]:
-        prs.part.drop_rel(sid.get(qn("r:id")))
-        sldIdLst.remove(sid)
-    src = os.path.join(workdir, "states.pptx")
-    prs.save(src)
-    subprocess.run(["soffice", "--headless", "--norestore", f"-env:UserInstallation=file://{workdir}/lo",
-                    "--convert-to", "pdf", "--outdir", workdir, src], check=True, timeout=900,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    doc = fitz.open(os.path.join(workdir, "states.pdf"))
-    if doc.page_count != len(index):
-        raise RuntimeError(f"rendered {doc.page_count} pages for {len(index)} states")
     out = [[] for _ in plans]
-    for n, page in enumerate(doc):
-        i, k = index[n]
-        pix = page.get_pixmap(matrix=fitz.Matrix(W / page.rect.width, H / page.rect.height), alpha=False)
-        path = os.path.join(workdir, f"s{i:02d}_{k:02d}.png")
-        pix.save(path)
-        out[i].append(path)
+    for c0 in range(0, len(plans), CHUNK):
+        prs = Presentation(io.BytesIO(stripped_pptx))
+        originals = list(prs.slides)
+        index = []
+        for i in range(c0, min(c0 + CHUNK, len(plans))):
+            for k, (t, hidden) in enumerate(states(plans[i])):
+                d = _dup(prs, originals[i])
+                _remove_ids(d, hidden)
+                index.append((i, k))
+        sldIdLst = prs.slides._sldIdLst
+        for sid in list(sldIdLst)[:len(originals)]:
+            prs.part.drop_rel(sid.get(qn("r:id")))
+            sldIdLst.remove(sid)
+        src = os.path.join(workdir, f"states{c0:02d}.pptx")
+        prs.save(src)
+        del prs, originals
+        gc.collect()
+        subprocess.run(["soffice", "--headless", "--norestore", f"-env:UserInstallation=file://{workdir}/lo",
+                        "--convert-to", "pdf", "--outdir", workdir, src], check=True, timeout=900,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        doc = fitz.open(src[:-5] + ".pdf")
+        if doc.page_count != len(index):
+            raise RuntimeError(f"rendered {doc.page_count} pages for {len(index)} states")
+        for n, page in enumerate(doc):
+            i, k = index[n]
+            pix = page.get_pixmap(matrix=fitz.Matrix(W / page.rect.width, H / page.rect.height), alpha=False)
+            path = os.path.join(workdir, f"s{i:02d}_{k:02d}.png")
+            pix.save(path)
+            out[i].append(path)
+        doc.close()
+        os.remove(src)
     return out
 
 
@@ -180,15 +187,18 @@ def segment(pics, starts_ms, dur_ms, audio, prev_pic, out, workdir, n):
         cur = nxt
     filt.append(f"[{cur}]trim=duration={D:.3f},setpts=PTS-STARTPTS[vo]")
     filt.append(f"[{a_idx}:a]aresample=44100,aformat=channel_layouts=stereo,apad,atrim=duration={D:.3f}[ao]")
-    _ff(args + ["-filter_complex", ";".join(filt), "-map", "[vo]", "-map", "[ao]",
-                "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-crf", "24", "-r", str(FPS),
+    _ff(["-filter_threads", "1"] + args + ["-filter_complex", ";".join(filt), "-map", "[vo]", "-map", "[ao]",
+                "-threads", "1", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-crf", "24", "-r", str(FPS),
                 "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-ac", "2", out])
 
 
 def make(pptx_bytes, stripped_pptx, log=None):
     """MP4 bytes for the narrated deck. stripped_pptx = the same deck without audio and timing (to_pdf's input)."""
+    import gc
     prs = Presentation(io.BytesIO(pptx_bytes))
     plans = plan(prs)
+    del prs
+    gc.collect()
     with tempfile.TemporaryDirectory() as d:
         pics = render_states(stripped_pptx, plans, d)
         segs, prev = [], None
