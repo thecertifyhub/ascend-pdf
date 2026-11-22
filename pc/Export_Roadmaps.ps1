@@ -92,7 +92,8 @@ foreach ($it in $list.items) {
           try { $j = $resp | ConvertFrom-Json } catch { $j = $null }
           if ($code -eq 0 -and $j -and $j.offset) { $off = [long]$j.offset; $ok = $true; break }
           $first = ($resp -split "`n")[0].Trim()
-          Say ("  piece at {0:N1} MB failed (curl exit {1}): {2}" -f ($off / 1MB), $code, $first)
+          # log file only: a few resent pieces are normal on this connection and need no attention
+          Add-Content -Path $log -Encoding UTF8 -Value ("{0}    piece at {1:N1} MB resent (curl exit {2}): {3}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), ($off / 1MB), $code, $first)
         }
         if (-not $ok) { throw "Upload stopped at $([math]::Round($off / 1MB)) MB after every retry (see the lines above)." }
         if (($off % (10MB)) -lt $buf.Length -or $off -ge $size) { Write-Host ("  uploaded {0} of {1} MB" -f [math]::Round($off / 1MB), [math]::Round($size / 1MB)) }
