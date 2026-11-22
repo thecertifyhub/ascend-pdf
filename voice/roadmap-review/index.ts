@@ -72,6 +72,44 @@ Deno.serve(async (r) => {
   if (!req) return json({ error: "request not found" }, 404);
   const lang = req.language === "FR" ? "FR" : "EN";
 
+  // ---- delivery: deck links, video upload, personal page link
+  const DELIVERY = ["ready_to_export", "video_ready", "sent"];
+  if (a === "delivery") {
+    if (!DELIVERY.includes(req.status)) return json({ error: "Not built yet." }, 409);
+    const { data: files } = await sb.from("roadmap_files").select("kind,path").eq("request_id", id);
+    const links: Record<string, string> = {};
+    for (const f of files || []) {
+      if (!f.path) continue;
+      const { data: su } = await sb.storage.from("roadmap-decks").createSignedUrl(f.path, 60 * 60 * 24, { download: true });
+      if (su) links[f.kind] = su.signedUrl;
+    }
+    const { data: ms } = await sb.from("roadmap_machine_settings").select("page_base,booking_url_en,booking_url_fr").eq("id", 1).single();
+    return json({ links, video_path: req.video_path, video_at: req.video_at,
+      page_url: req.video_path ? (ms?.page_base || "") + "?id=" + req.token : null,
+      booking_url: lang === "FR" ? ms?.booking_url_fr : ms?.booking_url_en });
+  }
+  if (a === "video_slot") {
+    if (!DELIVERY.includes(req.status)) return json({ error: "Not built yet." }, 409);
+    const path = `${id}/roadmap_${Date.now()}.mp4`;
+    const { data: up, error } = await sb.storage.from("roadmap-videos").createSignedUploadUrl(path);
+    if (error) return json({ error: error.message }, 500);
+    return json({ path, token: up.token });
+  }
+  if (a === "video_done") {
+    const path = String(body.path || "");
+    if (!path.startsWith(id + "/")) return json({ error: "bad path" }, 400);
+    const { data: ls } = await sb.storage.from("roadmap-videos").list(id, { search: path.split("/")[1] });
+    const obj = (ls || []).find((o: any) => `${id}/${o.name}` === path);
+    if (!obj) return json({ error: "The video did not arrive. Try again." }, 400);
+    const old = req.video_path;
+    await sb.from("roadmap_requests").update({ video_path: path, video_at: now(),
+      status: req.status === "ready_to_export" ? "video_ready" : req.status, updated_at: now() }).eq("id", id);
+    if (old && old !== path) await sb.storage.from("roadmap-videos").remove([old]);
+    const { data: ms } = await sb.from("roadmap_machine_settings").select("page_base").eq("id", 1).single();
+    return json({ message: "Video uploaded.", page_url: (ms?.page_base || "") + "?id=" + req.token,
+      size_mb: Math.round((obj.metadata?.size || 0) / 1048576) });
+  }
+
   if (a === "get") {
     const { data: draft } = await sb.from("roadmap_drafts").select("*").eq("request_id", id).maybeSingle();
     return json({ request: req, draft, name_auto: nameAuto(req.first_name, lang) });

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ascend Leadership Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --cream:#FBFAF6; --paper:#F3EFE6; --green:#1A4030; --green2:#245741; --gold:#C9A84C; --goldtext:#8A6A1F; --ink:#2B302D; --muted:#4A524C; --line:#E4DED0; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--cream); color:var(--ink); font-family:Manrope, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  body { border-left:8px solid var(--green); min-height:100vh; }
+  .wrap { max-width:880px; margin:0 auto; padding:28px 16px 48px; }
+  .logo { height:34px; width:auto; display:block; }
+  .eyebrow { margin:36px 0 8px; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--goldtext); }
+  h1 { margin:0; font-family:Fraunces, Georgia, serif; font-weight:600; font-size:clamp(28px,5vw,42px); line-height:1.12; color:var(--green); }
+  .sub { margin:12px 0 0; font-size:17px; line-height:1.55; color:var(--muted); max-width:640px; }
+  .rule { width:72px; height:3px; background:var(--gold); margin:22px 0 26px; border:0; }
+  .player { position:relative; width:100%; aspect-ratio:16/9; background:#0f241b; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(26,64,48,.18); }
+  .player video { width:100%; height:100%; display:block; background:#0f241b; }
+  .hint { margin:10px 2px 0; font-size:14px; color:var(--muted); }
+  .cta { margin-top:30px; background:var(--green); color:#fff; border-radius:12px; padding:24px; display:flex; gap:20px; align-items:center; justify-content:space-between; flex-wrap:wrap; transition:box-shadow .4s; }
+  .cta.glow { box-shadow:0 0 0 4px var(--gold); }
+  .cta h2 { margin:0 0 6px; font-family:Fraunces, Georgia, serif; font-weight:600; font-size:22px; }
+  .cta p { margin:0; font-size:15px; line-height:1.5; color:#D9E6DF; max-width:470px; }
+  .btn { display:inline-block; background:var(--gold); color:var(--green); font-weight:700; font-size:16px; text-decoration:none; padding:14px 22px; border-radius:8px; white-space:nowrap; }
+  .btn:hover { filter:brightness(1.05); }
+  .btn[aria-disabled="true"] { background:#9fb3a8; color:#1A4030; pointer-events:none; }
+  .pdf { display:inline-block; margin-top:18px; color:var(--green2); font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+  .steps { margin:34px 0 0; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .step { background:var(--paper); border-radius:10px; padding:16px; }
+  .step b { display:block; font-family:Fraunces, Georgia, serif; color:var(--gold); font-size:24px; margin-bottom:6px; }
+  .step span { font-size:14px; line-height:1.45; color:var(--ink); }
+  footer { margin-top:44px; padding-top:18px; border-top:1px solid var(--line); font-size:13px; color:var(--muted); }
+  footer a { color:var(--green2); }
+  .msg { margin-top:60px; font-size:18px; line-height:1.6; color:var(--muted); }
+  [hidden] { display:none !important; }
+  @media (max-width:640px) {
+    body { border-left-width:5px; }
+    .steps { grid-template-columns:1fr; }
+    .cta { padding:20px; } .btn { width:100%; text-align:center; white-space:normal; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img class="logo" alt="Ascend Leadership Group" src="data:image/png;base64,__LOGO__">
+  <div id="loading" class="msg">&nbsp;</div>
+  <div id="error" class="msg" hidden></div>
+  <main id="main" hidden>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1 id="title"></h1>
+    <p class="sub" id="sub"></p>
+    <hr class="rule">
+    <div class="player"><video id="video" controls playsinline preload="metadata"></video></div>
+    <p class="hint" id="hint"></p>
+    <section class="cta" id="cta">
+      <div><h2 id="cta_title"></h2><p id="cta_text"></p></div>
+      <a class="btn" id="book" target="_blank" rel="noopener"></a>
+    </section>
+    <a class="pdf" id="pdf" target="_blank" rel="noopener"></a>
+    <div class="steps">
+      <div class="step"><b>1</b><span id="s1"></span></div>
+      <div class="step"><b>2</b><span id="s2"></span></div>
+      <div class="step"><b>3</b><span id="s3"></span></div>
+    </div>
+  </main>
+  <footer id="footer"></footer>
+</div>
+<script>
+(function () {
+  // Kept 7-bit ASCII: French text uses \u escapes.
+  var API = "https://jbncsigalbtfwkxpgwso.supabase.co/functions/v1/roadmap-page";
+  var T = {
+    EN: {
+      eyebrow: "Your personalized roadmap",
+      title: function (n) { return (n ? n + ", here" : "Here") + " is your roadmap"; },
+      sub: function (r) { return "Where you stand today, what the market pays and looks for" + (r ? " as " + aAn(r) : "") + ", and the most logical path to get there."; },
+      hint: function (m) { return "About " + m + (m > 1 ? " minutes" : " minute") + ". Book your debrief right after watching."; },
+      cta_title: "Book your 15-minute roadmap debrief",
+      cta_text: "Right after the video. We answer your questions, confirm your path and unlock your $500 discount.",
+      book: "Book my debrief",
+      book_soon: "Booking link in your email",
+      pdf: "Download your roadmap (PDF)",
+      s1: "Watch your roadmap video.", s2: "Book your 15-minute debrief.", s3: "Confirm your place and choose your start date.",
+      footer: "Ascend Leadership Group. Questions? Write to ",
+      error: "This link is no longer active. Reply to the email that came with your roadmap and we will send you a new one."
+    },
+    FR: {
+      eyebrow: "Votre feuille de route personnalis\u00e9e",
+      title: function (n) { return (n ? n + ", voici" : "Voici") + " votre feuille de route"; },
+      sub: function (r) { return "O\u00f9 vous en \u00eates aujourd'hui, ce que le march\u00e9 paie et recherche" + (r ? " pour le poste de " + r : "") + ", et le chemin le plus logique pour y arriver."; },
+      hint: function (m) { return "Environ " + m + (m > 1 ? " minutes" : " minute") + ". R\u00e9servez votre d\u00e9briefing d\u00e8s la fin de la vid\u00e9o."; },
+      cta_title: "R\u00e9servez votre d\u00e9briefing de 15 minutes",
+      cta_text: "D\u00e8s la fin de la vid\u00e9o. Nous r\u00e9pondons \u00e0 vos questions, confirmons votre parcours et d\u00e9bloquons votre rabais de 500\u00a0$.",
+      book: "R\u00e9server mon d\u00e9briefing",
+      book_soon: "Lien de r\u00e9servation dans votre courriel",
+      pdf: "T\u00e9l\u00e9charger votre feuille de route (PDF)",
+      s1: "Regardez votre vid\u00e9o.", s2: "R\u00e9servez votre d\u00e9briefing de 15 minutes.", s3: "Confirmez votre place et choisissez votre date de d\u00e9but.",
+      footer: "Ascend Leadership Group. Des questions? \u00c9crivez \u00e0 ",
+      error: "Ce lien n'est plus actif. R\u00e9pondez au courriel qui accompagnait votre feuille de route et nous vous en enverrons un nouveau."
+    }
+  };
+  function aAn(s) { return (/^[aeiou]/i.test(s) ? "an " : "a ") + s; }
+  function $(id) { return document.getElementById(id); }
+  var token = new URLSearchParams(location.search).get("id") || "";
+  var guess = (navigator.language || "").toLowerCase().indexOf("fr") === 0 ? "FR" : "EN";
+
+  function send(ev) {
+    try {
+      fetch(API, { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t: token, event: ev }) });
+    } catch (e) {}
+  }
+  function footer(L) {
+    var f = $("footer"); f.textContent = T[L].footer;
+    var a = document.createElement("a"); a.href = "mailto:christian@ascendleadershipgroup.ca"; a.textContent = "christian@ascendleadershipgroup.ca";
+    f.appendChild(a); f.appendChild(document.createTextNode("."));
+  }
+  function fail(L) {
+    $("loading").hidden = true; $("error").hidden = false; $("error").textContent = T[L].error;
+    document.documentElement.lang = L === "FR" ? "fr" : "en"; footer(L);
+  }
+
+  fetch(API + "?t=" + encodeURIComponent(token), { headers: { "Accept": "application/json" } })
+    .then(function (r) { if (!r.ok) throw new Error("status " + r.status); return r.json(); })
+    .then(function (d) {
+      var L = d.lang === "FR" ? "FR" : "EN", t = T[L];
+      document.documentElement.lang = L === "FR" ? "fr" : "en";
+      document.title = L === "FR" ? "Votre feuille de route" : "Your roadmap";
+      $("eyebrow").textContent = t.eyebrow;
+      $("title").textContent = t.title(d.first_name);
+      $("sub").textContent = t.sub(d.role);
+            $("cta_title").textContent = t.cta_title;
+      $("cta_text").textContent = t.cta_text;
+      $("s1").textContent = t.s1; $("s2").textContent = t.s2; $("s3").textContent = t.s3;
+      var book = $("book");
+      if (d.booking_url) { book.href = d.booking_url; book.textContent = t.book; book.addEventListener("click", function () { send("book_click"); }); }
+      else { book.textContent = t.book_soon; book.setAttribute("aria-disabled", "true"); book.removeAttribute("href"); }
+      var pdf = $("pdf");
+      if (d.pdf_url) { pdf.href = d.pdf_url; pdf.textContent = t.pdf; pdf.addEventListener("click", function () { send("pdf"); }); }
+      else pdf.hidden = true;
+      footer(L);
+
+      var v = $("video"), marks = [25, 50, 75], sent = {}, played = false;
+      v.src = d.video_url;
+      v.addEventListener("loadedmetadata", function () { if (v.duration) $("hint").textContent = t.hint(Math.max(1, Math.round(v.duration / 60))); });
+      v.addEventListener("play", function () { if (!played) { played = true; send("play"); } });
+      v.addEventListener("timeupdate", function () {
+        if (!v.duration) return;
+        var p = v.currentTime / v.duration * 100;
+        for (var i = 0; i < marks.length; i++) if (p >= marks[i] && !sent[marks[i]]) { sent[marks[i]] = 1; send(String(marks[i])); }
+        if (p >= 97 && !sent[100]) { sent[100] = 1; send("100"); invite(); }
+      });
+      v.addEventListener("ended", function () { if (!sent[100]) { sent[100] = 1; send("100"); } invite(); });
+      function invite() {
+        var c = $("cta"); c.classList.add("glow");
+        try { c.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
+      }
+      $("loading").hidden = true; $("main").hidden = false;
+    })
+    .catch(function () { fail(guess); });
+})();
+</script>
+</body>
+</html>

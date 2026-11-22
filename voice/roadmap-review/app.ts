@@ -16,7 +16,7 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     ":root{--green:#245741;--green-pale:#e6f0eb;--amber:#fdb338;--red:#c94a3f;--cream:#f8f4ec;--ink:#1d2321;--mute:#66706b;--line:#ddd6c8;--card:#fff}",
     "*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:15px/1.45 'DM Sans',system-ui,sans-serif}",
     "h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;margin:0 0 8px}h1{font-size:24px}h2{font-size:18px;margin-top:22px}",
-    ".wrap{max-width:1100px;margin:0 auto;padding:20px 16px 80px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}",
+    ".wrap{max-width:1280px;margin:0 auto;padding:20px 16px 80px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}",
     ".card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}",
     "table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;color:var(--mute);letter-spacing:.04em}",
     "tr.row{cursor:pointer}tr.row:hover{background:var(--green-pale)}",
@@ -28,6 +28,12 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     ".score{width:70px;display:inline-block}.band-green{color:var(--green)}.band-yellow{color:#8a5a00}.band-red{color:var(--red)}",
     ".bar{position:sticky;bottom:0;background:var(--cream);border-top:1px solid var(--line);padding:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}",
     ".changed{border-color:var(--amber);background:#fffaf0}.msg{color:var(--mute);font-size:13px}",
+    ".top h1{margin:0}.top .ctl{display:flex;gap:8px;align-items:center}.top .ctl select{width:auto}.top .ctl button{white-space:nowrap}",
+    ".steps{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}.steps div{flex:1 1 200px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}.steps b{color:var(--green)}",
+    ".cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}@media(max-width:900px){.cols{grid-template-columns:1fr}}",
+    ".card h3{font-size:16px}.card .sec{font-size:12px;color:var(--mute);margin:-4px 0 8px}",
+    ".bar button{white-space:nowrap}.bar .help{flex-basis:100%;font-size:12px;color:var(--mute)}",
+    "td.st span{white-space:nowrap}.count{color:var(--mute);font-size:13px;margin:4px 0 0}",
     ".prof{border-left:4px solid var(--green)}.prof table td{border-bottom:1px solid #eee8dc;padding:6px 6px}.prof td.k{width:34%;color:var(--mute);font-size:13px}.prof ul{margin:0;padding-left:18px}.prof .note{background:#f9eeda;color:#5c3d00;border-radius:6px;padding:6px 10px;margin-top:10px}"
   ].join("\n");
   var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
@@ -74,10 +80,10 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     root.innerHTML = "";
     var wrap = el("div", { class: "wrap" });
     root.appendChild(wrap);
-    var filter = el("select", {}, ["to_review", "hold", "error", "approved", "not_fit", "all"].map(function (s) { return el("option", { value: s, text: s.replace("_", " ") }); }));
+    var filter = el("select", {}, ["to_review", "hold", "error", "approved", "ready_to_export", "video_ready", "sent", "not_fit", "all"].map(function (s) { return el("option", { value: s, text: s.replace("_", " ") }); }));
     filter.value = state.filter || "to_review";
     filter.addEventListener("change", function () { state.filter = filter.value; listView(); });
-    wrap.appendChild(el("div", { class: "top" }, [el("h1", { text: "Roadmap review" }), el("div", { style: "display:flex;gap:8px;align-items:center" }, [filter, el("button", { text: "Sign out", onclick: async function () { await sb.auth.signOut(); loginView(); } })])]));
+    wrap.appendChild(el("div", { class: "top" }, [el("h1", { text: "Roadmap review" }), el("div", { class: "ctl" }, [filter, el("button", { text: "Sign out", onclick: async function () { await sb.auth.signOut(); loginView(); } })])]));
     var box = el("div", { class: "card", text: "Loading..." });
     wrap.appendChild(box);
     try {
@@ -85,16 +91,60 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
       box.innerHTML = "";
       if (j.settings) wrap.insertBefore(el("div", { class: "msg", text: "Review mode: " + j.settings.review_mode + " | clean streak: " + j.settings.clean_streak + " of 20" }), box);
       if (!j.items.length) { box.textContent = "Nothing here."; return; }
+      wrap.insertBefore(el("div", { class: "count", text: j.items.length + " roadmap" + (j.items.length > 1 ? "s" : "") + ", newest first. Click a row to review it." }), box);
       var t = el("table", {}, [el("tr", {}, ["Lead", "Lang", "Source", "Target", "Status", "Flags", "Received"].map(function (h) { return el("th", { text: h }); }))]);
       j.items.forEach(function (it) {
         var fl = el("td", {}, [it.red ? el("span", { class: "pill red", text: it.red + " red" }) : null, it.flags ? el("span", { class: "pill amber", text: it.flags + " to check" }) : null]);
         t.appendChild(el("tr", { class: "row", onclick: function () { detailView(it.id); } }, [
           el("td", { text: it.first_name + " " + it.last_name }), el("td", { text: it.language }), el("td", { text: it.source }),
-          el("td", { text: it.target_title || it.target_family || "" }), el("td", { text: it.status }), fl,
+          el("td", { text: it.target_title || it.target_family || "" }), el("td", { class: "st" }, [el("span", { class: "pill" + (it.status === "error" ? " red" : ""), text: it.status.replace(/_/g, " ") })]), fl,
           el("td", { text: new Date(it.created_at).toLocaleString() })]));
       });
       box.appendChild(t);
     } catch (e) { box.textContent = e.message; if (/sign in|auth|admin/i.test(e.message)) loginView(e.message); }
+  }
+
+  // Video and delivery: deck downloads, upload of the exported MP4, the lead's personal page link.
+  function deliveryCard(req) {
+    var card = el("div", { class: "card" }, [el("h3", { text: "Video and delivery" })]);
+    var body = el("div", { text: "Loading..." }); card.appendChild(body);
+    function copyBtn(url) {
+      return el("button", { text: "Copy link", onclick: function () { try { navigator.clipboard.writeText(url); this.textContent = "Copied"; } catch (e) {} } });
+    }
+    async function load() {
+      var d;
+      try { d = await api("delivery", { id: req.id }); } catch (e) { body.textContent = e.message; return; }
+      body.innerHTML = "";
+      body.appendChild(el("p", { html: "<b>1.</b> Download the PowerPoint, check it, then export the video: File, Export, Create a Video, " +
+        "<i>Full HD (1080p)</i>, <i>Use Recorded Timings and Narrations</i>." }));
+      body.appendChild(el("div", {}, [
+        d.links.pptx ? el("a", { href: d.links.pptx, text: "PowerPoint", style: "margin-right:14px" }) : null,
+        d.links.pdf ? el("a", { href: d.links.pdf, text: "PDF" }) : null]));
+      body.appendChild(el("p", { html: "<b>2.</b> Upload the exported MP4." }));
+      var inp = el("input", { type: "file", accept: "video/mp4" });
+      var st = el("div", { class: "msg", text: d.video_path ? "Video uploaded " + new Date(d.video_at).toLocaleString() + ". Uploading again replaces it." : "" });
+      var go = el("button", { class: "primary", text: "Upload video", onclick: async function () {
+        var f = inp.files && inp.files[0];
+        if (!f) { st.textContent = "Choose the MP4 file first."; return; }
+        if (!/\.mp4$/i.test(f.name)) { st.textContent = "The file must be an MP4."; return; }
+        go.disabled = true; st.textContent = "Uploading " + Math.round(f.size / 1048576) + " MB. Keep this page open...";
+        try {
+          var slot = await api("video_slot", { id: req.id });
+          var up = await sb.storage.from("roadmap-videos").uploadToSignedUrl(slot.path, slot.token, f, { contentType: "video/mp4" });
+          if (up.error) throw new Error(up.error.message);
+          var done = await api("video_done", { id: req.id, path: slot.path });
+          st.textContent = done.message + " (" + done.size_mb + " MB)";
+          load();
+        } catch (e) { st.textContent = "Upload failed: " + e.message; go.disabled = false; }
+      } });
+      body.appendChild(el("div", {}, [inp, go])); body.appendChild(st);
+      body.appendChild(el("p", { html: "<b>3.</b> The lead's personal page (video, PDF, booking button)." }));
+      if (d.page_url) body.appendChild(el("div", {}, [el("a", { href: d.page_url, target: "_blank", text: "Open the page", style: "margin-right:14px" }), copyBtn(d.page_url)]));
+      else body.appendChild(el("div", { class: "msg", text: "Available once the video is uploaded." }));
+      if (!d.booking_url) body.appendChild(el("div", { class: "msg", html: "<span class='pill amber'>to set</span> No debrief booking link yet: the page shows \"Booking link in your email\"." }));
+    }
+    load();
+    return card;
   }
 
   function field(path, label, kind, opts) {
@@ -203,6 +253,15 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
 
     wrap.appendChild(el("div", { class: "top" }, [el("h1", { text: req.first_name + " " + req.last_name }), el("div", {}, [el("span", { class: "pill", text: req.language }), el("span", { class: "pill", text: req.source }), el("span", { class: "pill", text: req.status })])]));
     if (req.error) wrap.appendChild(el("div", { class: "card" }, [el("span", { class: "pill red", text: "error" }), " " + req.error]));
+    if (["ready_to_export", "video_ready", "sent"].indexOf(req.status) >= 0) wrap.appendChild(deliveryCard(req));
+
+    wrap.appendChild(el("div", { class: "steps" }, [
+      el("div", { html: "<b>1. Decide</b><br>Read the profile summary. Not a fit? Click Not a fit." }),
+      el("div", { html: "<b>2. Correct</b><br>Fix any field on the right. Changed fields turn amber." }),
+      el("div", { html: "<b>3. Approve</b><br>Saves your corrections and starts narration and the deck." })]));
+    var cols = el("div", { class: "cols" }), side = el("div", { class: "side" }), main = el("div");
+    cols.appendChild(side); cols.appendChild(main); wrap.appendChild(cols);
+    var host = wrap; wrap = side;
 
     wrap.appendChild(profileCard(doc.profile_summary || (d.json_generated || {}).profile_summary));
 
@@ -218,28 +277,29 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
       el("div", { html: "<div class='lbl'>Industry / location</div>" + esc((req.target_industry || "") + " | " + (req.target_location || "")) }),
       el("div", { html: "<div class='lbl'>Pricing region</div>" + esc(req.region || "") }),
       el("div", { html: "<div class='lbl'>Note</div>" + esc(req.note || "") })])]));
+    wrap = main;
 
-    if (doc.today) wrap.appendChild(el("div", { class: "card" }, [el("h3", { text: "Today and target (slide 2)" }), el("div", { class: "grid2" }, [
+    if (doc.today) wrap.appendChild(el("div", { class: "card" }, [el("h3", { text: "Slide 2. Today and target" }), el("div", { class: "grid2" }, [
       field("today.current_title", "Current title"), field("today.location", "Current location"),
       field("target.target_role_label", "Target role label"), field("target.industry", "Target industry")])]));
 
     var m = doc.market || {};
     var mrows = (m.rows || []).map(function (r) { return el("tr", {}, [el("td", { text: r.region }), el("td", { text: r.current ? r.current.median + " $/h (" + r.current.occupation_code + ")" : "-" }), el("td", { text: r.target ? r.target.median + " $/h (" + r.target.occupation_code + ")" : "-" }), el("td", { text: r.target ? r.target.period : "" })]); });
-    wrap.appendChild(el("div", { class: "card" }, [el("h3", { text: "Market (slides 3 and 4, computed by code)" }),
+    wrap.appendChild(el("div", { class: "card" }, [el("h3", { text: "Slides 3 and 4. Market (computed from government data)" }),
       el("div", { class: "msg", text: "Version: " + (m.variant === "gap" ? "wage gap" : "target pay range only") + " | wage role: " + (m.wage_family || "-") + " (stated: " + (m.stated_family || "-") + ") | current: " + (m.current_family || "-") + ", " + (m.current_country || "-") }),
       el("table", {}, [el("tr", {}, ["Region", "Current", "Target", "Period"].map(function (h) { return el("th", { text: h }); }))].concat(mrows)),
       el("div", { class: "msg", text: doc.roi ? "Payback (guided program): " + payback(doc) : "Payback line not shown" }),
       el("div", { class: "msg", text: doc.demand && doc.demand.national ? "Outlook: " + doc.demand.national.openings + " openings, " + doc.demand.national.seekers + " job seekers, " + doc.demand.national.period : ((doc.demand && doc.demand.provincial || []).map(function (p) { return p.geography + ": " + p.conclusion; }).join(" | ") || "No outlook row") }),
       el("div", { class: "msg", text: "To change the market data, edit the form answers or the market tables, then regenerate." })]));
 
-    var req5 = el("div", { class: "card" }, [el("h3", { text: "Requirements (slide 5)" }), el("div", { class: "grid2" }, [
+    var req5 = el("div", { class: "card" }, [el("h3", { text: "Slide 5. Requirements" }), el("div", { class: "grid2" }, [
       field("requirements.expertise", "Technical expertise", "select", [["on_track", "On track"], ["in_progress", "In progress"]]),
       field("requirements.experience", "Experience", "select", [["on_track", "On track"], ["in_progress", "In progress"]]),
       field("requirements.certification", "Target certification", "select", [["not_started", "Not started"], ["in_progress", "In progress"]])]),
       el("div", { class: "ev", text: doc.requirements && doc.requirements.notes || "" })]);
     wrap.appendChild(req5);
 
-    var gapsCard = el("div", { class: "card" }, [el("h3", { text: "The three gaps (slide 6)" }), el("div", { class: "msg", text: "Expected by the rule: " + (doc.expected_dimensions || []).map(function (n) { return DIMS[lang][n]; }).join(", ") })]);
+    var gapsCard = el("div", { class: "card" }, [el("h3", { text: "Slide 6. The three gaps" }), el("div", { class: "msg", text: "Expected by the rule: " + (doc.expected_dimensions || []).map(function (n) { return DIMS[lang][n]; }).join(", ") })]);
     (doc.gaps || []).forEach(function (g, i) {
       gapsCard.appendChild(el("div", { style: "margin-top:10px" }, [
         field("gaps." + i + ".n", "Gap " + (i + 1), "select", [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return [n, n + ". " + DIMS[lang][n]]; })),
@@ -248,7 +308,7 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     });
     wrap.appendChild(gapsCard);
 
-    var pil = el("div", { class: "card" }, [el("h3", { text: "Pillar scores (slides 8 to 10)" })]);
+    var pil = el("div", { class: "card" }, [el("h3", { text: "Slide 10. Pillar scores" })]);
     (doc.pillars || []).forEach(function (p, i) {
       var band = p.score >= 8 ? "green" : p.score >= 6 ? "yellow" : "red";
       pil.appendChild(el("div", { style: "margin-top:10px" }, [
@@ -259,7 +319,7 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     });
     wrap.appendChild(pil);
 
-    var sv = el("div", { class: "card" }, [el("h3", { text: "Personalized script pieces (spoken)" })]);
+    var sv = el("div", { class: "card" }, [el("h3", { text: "Spoken script pieces" })]);
     var svKeys = ["target_role", "current_role", "location", "years", "credentials", "target_industry", "target_regions", "target_field", "expertise_have", "experience_have"];
     var g2 = el("div", { class: "grid2" }, svKeys.filter(function (k) { return doc.script_vars && k in doc.script_vars; }).map(function (k) { return field("script_vars." + k, k.replace(/_/g, " ")); }));
     sv.appendChild(g2);
@@ -276,14 +336,16 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
         if (action !== "save") setTimeout(listView, 700); else { state.orig = clone(state.doc); detailView(req.id); }
       } catch (e) { msg.textContent = e.message; }
     }
+    wrap = host;
     wrap.appendChild(el("div", { class: "bar" }, [
       el("div", { style: "flex:1 1 260px" }, [reason]),
-      el("button", { text: "Save edits", onclick: function () { act("save"); } }),
-      el("button", { class: "primary", text: "Approve", onclick: function () { if (confirm("Approve this roadmap and send it to narration?")) act("approve"); } }),
-      el("button", { text: "Regenerate", onclick: function () { var n = prompt("What should the generator do differently? (optional)") ; if (n !== null) act("regenerate", { note: n }); } }),
+      el("button", { class: "primary", text: "Approve", title: "Saves your corrections and sends the roadmap to narration and the deck build", onclick: function () { if (confirm("Approve this roadmap and send it to narration?")) act("approve"); } }),
+      el("button", { text: "Save draft", title: "Keeps your corrections without sending anything; come back later", onclick: function () { act("save"); } }),
+      el("button", { text: "Regenerate", title: "Redo the whole draft with your instruction (hand edits are discarded)", onclick: function () { var n = prompt("What should the generator do differently? (optional)") ; if (n !== null) act("regenerate", { note: n }); } }),
       el("button", { text: "Hold", onclick: function () { act("hold"); } }),
       el("button", { class: "danger", text: "Not a fit", onclick: function () { var n = prompt("Why is this lead not a fit?"); if (n) act("not_fit", { note: n }); } }),
-      msg]));
+      msg,
+      el("div", { class: "help", text: "Normal path: correct, then Approve (no need to save first). Regenerate only when the draft is too wrong to fix by hand. Hold parks it without a decision." })]));
   }
 
   /* same rule as the deck and the narration: guided price after the debrief discount / monthly wage gain, rounded up */
