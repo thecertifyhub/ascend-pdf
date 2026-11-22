@@ -3,16 +3,37 @@
 // POST {"action":"list"}                        -> roadmaps built and not yet exported by PowerPoint (not tests):
 //                                                  folder name, file base name, signed PPTX and PDF links (2 hours)
 // POST {"action":"video_slot", "request_id"}    -> an upload slot in roadmap-videos for the exported MP4
+// POST {"action":"video_start", "request_id", "size"} -> a resumable upload; then the raw 6 MB chunks are POSTed with
+//                                                  headers x-key, x-upload-url, x-chunk-offset
 // POST {"action":"video_done", "request_id", "path"} -> the page now plays that video (status video_ready)
 import { createClient } from "jsr:@supabase/supabase-js@2";
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
+const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json; charset=utf-8" } });
 const plain = (s: string) => String(s ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+
+const TUS = "https://jbncsigalbtfwkxpgwso.storage.supabase.co/storage/v1/upload/resumable";
+const SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const tusHeaders = { "Tus-Resumable": "1.0.0", apikey: SVC, authorization: `Bearer ${SVC}` };
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
-  const b = await req.json().catch(() => ({}));
   const { data: s } = await sb.from("roadmap_machine_settings").select("pc_export_key").eq("id", 1).single();
+
+  // a 6 MB chunk of the video (raw body): forwarded to the resumable upload created by "video_start".
+  // Large videos go up in chunks because a single upload is cut off near 100 MB.
+  if (req.headers.get("x-chunk-offset") !== null) {
+    if (!s?.pc_export_key || req.headers.get("x-key") !== s.pc_export_key) return json({ error: "unauthorized" }, 401);
+    const url = req.headers.get("x-upload-url") ?? "";
+    if (!url.startsWith(TUS + "/")) return json({ error: "bad upload url" }, 400);
+    const body = new Uint8Array(await req.arrayBuffer());
+    const p = await fetch(url, { method: "PATCH", body, headers: { ...tusHeaders, "Upload-Offset": req.headers.get("x-chunk-offset")!,
+      "Content-Type": "application/offset+octet-stream" } });
+    const t = await p.text();
+    if (p.status >= 300) return json({ error: `chunk ${p.status}: ${t.slice(0, 200)}` }, 502);
+    return json({ offset: Number(p.headers.get("upload-offset")) });
+  }
+
+  const b = await req.json().catch(() => ({}));
   if (!b.key || !s?.pc_export_key || b.key !== s.pc_export_key) return json({ error: "unauthorized" }, 401);
 
   if (b.action === "list") {
@@ -39,6 +60,17 @@ Deno.serve(async (req) => {
     const path = `${id}/roadmap_pc_${Date.now()}.mp4`;
     const { data, error } = await sb.storage.from("roadmap-videos").createSignedUploadUrl(path);
     return error ? json({ error: error.message }, 500) : json({ path, signed_url: data.signedUrl });
+  }
+  if (b.action === "video_start") {
+    // a resumable upload for the whole file; the script then sends it in 6 MB chunks (see above)
+    const size = Number(b.size);
+    if (!(size > 0)) return json({ error: "size required" }, 400);
+    const path = `${id}/roadmap_pc_${Date.now()}.mp4`;
+    const meta = `bucketName ${btoa("roadmap-videos")},objectName ${btoa(path)},contentType ${btoa("video/mp4")}`;
+    const c = await fetch(TUS, { method: "POST", headers: { ...tusHeaders, "Upload-Length": String(size), "Upload-Metadata": meta, "x-upsert": "true" } });
+    const loc = c.headers.get("location"); const t = await c.text();
+    if (!loc) return json({ error: `start ${c.status}: ${t.slice(0, 200)}` }, 502);
+    return json({ path, upload_url: loc, chunk: 6 * 1024 * 1024 });
   }
   if (b.action === "video_done") {
     const path = String(b.path ?? "");

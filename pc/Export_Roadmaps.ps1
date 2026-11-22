@@ -40,41 +40,49 @@ foreach ($it in $list.items) {
     $mp4w = Join-Path $work "$($it.base).mp4"
     $dest = Join-Path $dir "$($it.base).mp4"
     Invoke-WebRequest -UseBasicParsing -Uri $it.pdf_url -OutFile (Join-Path $dir "$($it.base).pdf")
-    $built = [datetime]::Parse($it.built_at).ToUniversalTime()
-    if ((Test-Path $dest) -and ((Get-Item $dest).LastWriteTimeUtc -gt $built) -and ((Get-Item $dest).Length -le 95MB)) {
-      # exported from this same deck on an earlier run whose upload failed: upload it again, no new export
-      Say 'Video already exported on an earlier run: uploading it again.'
-      Copy-Item $dest $mp4w -Force
-    } else {
     Invoke-WebRequest -UseBasicParsing -Uri $it.pptx_url -OutFile $pptx
     Say 'Deck and PDF downloaded. PowerPoint is exporting the video...'
     if (Test-Path $mp4w) { Remove-Item $mp4w -Force }
 
     # Open(FileName, ReadOnly, Untitled, WithWindow); CreateVideo(FileName, UseTimingsAndNarrations,
     # DefaultSlideDuration, VertResolution, FramesPerSecond, Quality)
-    # uploads are capped near 100 MB: quality 60 first, a lower quality only if the file is still too big
-    foreach ($q in 60, 40) {
-      if (Test-Path $mp4w) { Remove-Item $mp4w -Force }
-      $pres = $ppt.Presentations.Open($pptx, -1, 0, -1)
-      $pres.CreateVideo($mp4w, $true, 5, 1080, 30, $q)
-      # CreateVideoStatus: 1 in progress, 2 queued, 3 done, 4 failed
-      do { Start-Sleep -Seconds 5; $st = $pres.CreateVideoStatus } while ($st -eq 1 -or $st -eq 2)
-      $pres.Close()
-      if ($st -ne 3) { throw "PowerPoint could not export the video (status $st)." }
-      $mb = [math]::Round((Get-Item $mp4w).Length / 1MB)
-      Say "Video exported at quality $q ($mb MB)."
-      if ($mb -le 95) { break }
-    }
-    if ($mb -gt 95) { throw "The video is $mb MB, over the 95 MB upload limit." }
+    $pres = $ppt.Presentations.Open($pptx, -1, 0, -1)
+    $pres.CreateVideo($mp4w, $true, 5, 1080, 30, 85)
+    # CreateVideoStatus: 1 in progress, 2 queued, 3 done, 4 failed
+    do { Start-Sleep -Seconds 5; $st = $pres.CreateVideoStatus } while ($st -eq 1 -or $st -eq 2)
+    $pres.Close()
+    if ($st -ne 3) { throw "PowerPoint could not export the video (status $st)." }
+    $mb = [math]::Round((Get-Item $mp4w).Length / 1MB)
+    Say "Video exported ($mb MB)."
 
     Copy-Item $mp4w $dest -Force
     Say "Saved in $dir"
-    }
 
-    $slot = Api @{ action = 'video_slot'; request_id = $it.id }
-    # curl.exe (built into Windows 10/11): PowerShell 5's own upload drops large files
-    $code = & curl.exe -sS -o NUL -w '%{http_code}' -X PUT -H 'Content-Type: video/mp4' -H 'x-upsert: true' -H 'Expect:' --data-binary "@$mp4w" $slot.signed_url
-    if ($LASTEXITCODE -ne 0 -or $code -notmatch '^2') { throw "Video upload failed (curl exit $LASTEXITCODE, HTTP $code)." }
+    # chunked upload (6 MB pieces through roadmap-pc): a single upload is cut off near 100 MB
+    $size = (Get-Item $mp4w).Length
+    $slot = Api @{ action = 'video_start'; request_id = $it.id; size = $size }
+    if (-not $slot.upload_url) { throw "Could not start the upload: $($slot.error)" }
+    $buf = New-Object byte[] $slot.chunk
+    $chunkFile = Join-Path $work 'chunk.bin'
+    $fs = [IO.File]::OpenRead($mp4w)
+    try {
+      $off = 0
+      while ($off -lt $size) {
+        $n = $fs.Read($buf, 0, $buf.Length)
+        $out = [IO.File]::Create($chunkFile); $out.Write($buf, 0, $n); $out.Close()
+        $ok = $false
+        foreach ($try in 1..3) {
+          $resp = & curl.exe -sS -X POST -H "x-key: $key" -H "x-upload-url: $($slot.upload_url)" -H "x-chunk-offset: $off" `
+            -H 'Content-Type: application/octet-stream' -H 'Expect:' --data-binary "@$chunkFile" $api
+          try { $j = $resp | ConvertFrom-Json } catch { $j = $null }
+          if ($LASTEXITCODE -eq 0 -and $j -and $j.offset) { $ok = $true; break }
+          Start-Sleep -Seconds 3
+        }
+        if (-not $ok) { throw "Upload stopped at $([math]::Round($off / 1MB)) MB: $resp" }
+        $off = [long]$j.offset
+        Write-Host ("  uploaded {0} of {1} MB" -f [math]::Round($off / 1MB), [math]::Round($size / 1MB))
+      }
+    } finally { $fs.Close(); Remove-Item $chunkFile -Force -ErrorAction SilentlyContinue }
     $done = Api @{ action = 'video_done'; request_id = $it.id; path = $slot.path }
     Say 'Uploaded: the lead''s page now plays this video.'
     Remove-Item $pptx, $mp4w -Force -ErrorAction SilentlyContinue
