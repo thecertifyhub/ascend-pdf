@@ -34,7 +34,9 @@ Deno.serve(async (req) => {
     if (!path.startsWith(id + "/")) return json({ error: "bad path" }, 400);
     const { data: ls } = await sb.storage.from("roadmap-videos").list(id, { search: path.split("/")[1] });
     if (!(ls ?? []).some((o: any) => `${id}/${o.name}` === path)) return json({ error: "video not found" }, 400);
-    const { data: r } = await sb.from("roadmap_requests").select("status,video_path").eq("id", id).single();
+    const { data: r } = await sb.from("roadmap_requests").select("status,video_path,pc_video_at").eq("id", id).single();
+    // a PowerPoint-exported video (Export_Roadmaps.bat) always wins over the server-made one
+    if (r?.pc_video_at) { await sb.storage.from("roadmap-videos").remove([path]); return json({ ok: true, skipped: "PowerPoint video in use" }); }
     const now = new Date().toISOString();
     await sb.from("roadmap_requests").update({ video_path: path, video_at: now, updated_at: now,
       status: r?.status === "ready_to_export" ? "video_ready" : r?.status }).eq("id", id);
