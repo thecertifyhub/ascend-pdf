@@ -41,6 +41,7 @@ SCRUB["FR"] = {
 
 # English static text changed after the benchmark (Christian's review, Nov 21)
 EN = {
+    (1, "eyebrow"): "PERSONALIZED ROADMAP",   # not "CMRP roadmap": the roadmap is about the next role
     (7, "k2_text"): ["Deliberate career positioning", "A resume, LinkedIn profile and story that present you as the best candidate."],
     (12, "a1_text"): ["02", "Certification readiness", "A structured method to pass the certification exam on the first attempt."],
     (12, "a2_text"): ["03", "Professional brand and market positioning", "A resume, LinkedIn profile and story that present you as the best candidate."],
@@ -113,7 +114,7 @@ def style_pay_band(shape):
 
 # French static text, keyed by (slide number, shape name). Lines = paragraphs.
 FR = {
-    (1, "eyebrow"): "FEUILLE DE ROUTE CMRP PERSONNALISÉE",
+    (1, "eyebrow"): "FEUILLE DE ROUTE PERSONNALISÉE",
     (1, "title"): ["Votre parcours vers", "Spécialiste en maintenance"],
     (1, "sub_text"): "Où vous en êtes aujourd'hui, ce que le marché paie pour votre prochaine étape, et le chemin le plus logique pour y arriver.",
     (2, "eyebrow"): "01 · OÙ VOUS EN ÊTES, OÙ VOUS ALLEZ",
