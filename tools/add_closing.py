@@ -70,6 +70,9 @@ def add(path, lang):
 
     # one sequence that starts with the slide: sting + logo wipe at 0, tagline at TAGLINE_AT_MS
     rt.retime(s, [], audio=(spid, HOLD_MS))
+    # an explicit advance time: PowerPoint's video export gives the LAST slide only its advance time, so
+    # "after 0" left the closing out of the video (Nov 22, Herve). Every other slide is timed by its narration.
+    rt.set_advance(s, HOLD_MS)
     timing = s._element.find(qn("p:timing"))
     ids = [int(c.get("id")) for c in timing.iter(qn("p:cTn"))]
     nxt = [max(ids) + 1]
