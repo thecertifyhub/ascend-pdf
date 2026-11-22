@@ -153,6 +153,7 @@
       footer(L);
 
       var v = $("video"), marks = [25, 50, 75], sent = {}, played = false;
+      if (d.poster_url) v.poster = d.poster_url;   // slide 1 until the video plays
       v.src = d.video_url;
       v.addEventListener("loadedmetadata", function () { if (v.duration) $("hint").textContent = t.hint(Math.max(1, Math.round(v.duration / 60))); });
       v.addEventListener("play", function () { if (!played) { played = true; send("play"); } });

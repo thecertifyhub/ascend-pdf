@@ -78,6 +78,18 @@ def roadmap_build(req_id):
     return jsonify(ok=True, started=started), 202
 
 
+@app.post("/roadmap/<req_id>/poster")
+def roadmap_poster(req_id):
+    """Makes the video thumbnail (slide 1) for a roadmap already built, without rebuilding it."""
+    if not _authorized():
+        return jsonify(error="unauthorized"), 401
+    import roadmap_job
+    try:
+        return jsonify(ok=True, **roadmap_job.make_poster(req_id))
+    except Exception as e:
+        return jsonify(ok=False, error=f"{type(e).__name__}: {e}"[:500]), 500
+
+
 @app.route("/jobs/<job_id>/run", methods=["GET", "POST"])
 def run_job(job_id):
     if not _authorized():

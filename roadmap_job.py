@@ -4,14 +4,16 @@ import base64, re, threading, traceback
 import requests
 import engine, roadmap
 
-TYPES = {"pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation", "pdf": "application/pdf"}
+TYPES = {"pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation", "pdf": "application/pdf",
+         "poster": "image/jpeg"}
+EXT = {"poster": "jpg"}
 
 
 def _filename(req, kind):
     import unicodedata
     name = unicodedata.normalize("NFKD", f"{req.get('first_name', '')} {req.get('last_name', '')}").encode("ascii", "ignore").decode()
     base = re.sub(r"[^A-Za-z0-9]+", "_", name.title()).strip("_")  # Hervé -> Herve, never Herv
-    return f"Ascend_Roadmap_{base}.{kind}"
+    return f"Ascend_Roadmap_{base}.{EXT.get(kind, kind)}"
 
 
 def _save(req_id, req, blobs, meta):
@@ -36,6 +38,41 @@ def _save(req_id, req, blobs, meta):
             raise RuntimeError(f"upload {f['kind']} {u.status_code}: {u.text[:300]}")
         done.append(dict(f, path=slot["path"], size=len(blobs[f["kind"]])))
     engine.rpc("roadmap_build_done", p_secret=engine.ENGINE_SECRET, p_id=req_id, p_meta=meta, p_files=done)
+
+def poster(pdf):
+    """The video thumbnail on the lead's page: slide 1 of the roadmap, 1920x1080 JPEG."""
+    import fitz
+    doc = fitz.open(stream=pdf, filetype="pdf")
+    page = doc[0]
+    pix = page.get_pixmap(matrix=fitz.Matrix(1920 / page.rect.width, 1080 / page.rect.height), alpha=False)
+    out = pix.tobytes("jpeg", jpg_quality=88)
+    doc.close()
+    return out
+
+
+def make_poster(req_id):
+    """Thumbnail for a roadmap already built (no rebuild, status unchanged): slide 1 of its stored PDF."""
+    r = requests.post(f"{engine.SUPABASE_URL}/functions/v1/roadmap-export", timeout=120,
+                      json={"request_id": req_id, "secret": engine.ENGINE_SECRET})
+    r.raise_for_status()
+    pdf = (r.json() or {}).get("pdf") or {}
+    if not pdf.get("url"):
+        raise RuntimeError("no stored PDF for this roadmap")
+    blob = poster(requests.get(pdf["url"], timeout=120).content)
+    name = re.sub(r"\.pdf$", ".jpg", pdf.get("filename") or "Ascend_Roadmap.pdf")
+    s = requests.post(f"{engine.SUPABASE_URL}/functions/v1/roadmap-export", timeout=60,
+                      json={"action": "upload", "request_id": req_id, "secret": engine.ENGINE_SECRET,
+                            "files": [{"kind": "poster", "filename": name}]}).json().get("poster") or {}
+    if not s.get("signed_url"):
+        raise RuntimeError(f"upload slot poster: {s.get('error')}")
+    url = s["signed_url"] if not s["signed_url"].startswith("/") else engine.SUPABASE_URL + "/storage/v1" + s["signed_url"]
+    u = requests.put(url, data=blob, timeout=120, headers={"Content-Type": "image/jpeg", "x-upsert": "true"})
+    if u.status_code >= 300:
+        raise RuntimeError(f"upload poster {u.status_code}: {u.text[:300]}")
+    engine.rpc("roadmap_poster_done", p_secret=engine.ENGINE_SECRET, p_id=req_id,
+               p_file={"filename": name, "path": s["path"], "size": len(blob)})
+    return {"path": s["path"], "bytes": len(blob)}
+
 
 def _video(req_id, pptx):
     """The narrated deck as an MP4, made here (no PowerPoint step), uploaded to roadmap-videos. A failure leaves the
@@ -83,7 +120,7 @@ def _run(req_id):
             return
         pptx, meta = roadmap.build(job)
         pdf = roadmap.to_pdf(pptx)
-        _save(req_id, job["request"], {"pptx": pptx, "pdf": pdf}, meta)
+        _save(req_id, job["request"], {"pptx": pptx, "pdf": pdf, "poster": poster(pdf)}, meta)
         engine.log("roadmap", req_id, "built", meta)
         # The video is exported by PowerPoint on Christian's PC (pc/Export_Roadmaps.bat): it renders the deck more
         # cleanly than the server could. roadmap_video.py (server-made video) is kept but no longer called.
