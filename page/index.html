@@ -251,7 +251,7 @@
         if (!v.duration) return;
         var p = v.currentTime / v.duration * 100;
         for (var i = 0; i < marks.length; i++) if (p >= marks[i] && !sent[marks[i]]) { sent[marks[i]] = 1; send(String(marks[i])); }
-        if (p >= 97 && !sent[100]) { sent[100] = 1; send("100"); invite(); }
+        if (p >= 97 && !sent[100]) { sent[100] = 1; send("100"); }   // counted as watched; the page moves to booking only at the end, after the closing
       });
       v.addEventListener("ended", function () { if (!sent[100]) { sent[100] = 1; send("100"); } invite(); });
       function invite() {
