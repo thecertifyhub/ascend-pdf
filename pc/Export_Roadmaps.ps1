@@ -40,8 +40,9 @@ foreach ($it in $list.items) {
     $mp4w = Join-Path $work "$($it.base).mp4"
     $dest = Join-Path $dir "$($it.base).mp4"
     Invoke-WebRequest -UseBasicParsing -Uri $it.pdf_url -OutFile (Join-Path $dir "$($it.base).pdf")
-    if (Test-Path $dest) {
-      # exported on an earlier run whose upload failed: upload it again, no new export
+    $built = [datetime]::Parse($it.built_at).ToUniversalTime()
+    if ((Test-Path $dest) -and ((Get-Item $dest).LastWriteTimeUtc -gt $built)) {
+      # exported from this same deck on an earlier run whose upload failed: upload it again, no new export
       Say 'Video already exported on an earlier run: uploading it again.'
       Copy-Item $dest $mp4w -Force
     } else {

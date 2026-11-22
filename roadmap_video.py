@@ -34,10 +34,11 @@ def plan(prs):
     for slide in prs.slides:
         x = slide._element
         audio, dur, reveals = None, 0, []
+        holds = {sh.shape_id for sh in slide.shapes if sh.name == "narration_hold"}
         for ctn in x.iter(qn("p:cTn")):
             cls = ctn.get("presetClass")
             tgt = next(ctn.iter(qn("p:spTgt")), None)
-            if cls == "entr" and tgt is not None:
+            if cls == "entr" and tgt is not None and int(tgt.get("spid")) not in holds:
                 reveals.append((_delay(ctn), int(tgt.get("spid"))))
             elif cls == "mediacall" and tgt is not None:
                 inner = [int(c.get("dur")) for c in ctn.iter(qn("p:cTn")) if (c.get("dur") or "").isdigit()]

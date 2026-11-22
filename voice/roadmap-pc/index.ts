@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   if (!b.key || !s?.pc_export_key || b.key !== s.pc_export_key) return json({ error: "unauthorized" }, 401);
 
   if (b.action === "list") {
-    const { data: rs } = await sb.from("roadmap_requests").select("id,first_name,last_name,language,status")
+    const { data: rs } = await sb.from("roadmap_requests").select("id,first_name,last_name,language,status,built_at")
       .in("status", ["ready_to_export", "video_ready"]).is("pc_video_at", null).neq("source", "test").order("created_at");
     const items = [];
     for (const r of rs ?? []) {
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       const sign = async (x: any) => (await sb.storage.from("roadmap-decks").createSignedUrl(x.path, 7200)).data?.signedUrl;
       const base = String(f.pptx.filename).replace(/\.pptx$/i, "");
       items.push({ id: r.id, name: `${r.first_name} ${r.last_name}`, language: r.language,
-        folder: `${plain(r.last_name)}_${plain(String(r.first_name).split(/\s+/)[0])}`, base,
+        folder: `${plain(r.last_name)}_${plain(String(r.first_name).split(/\s+/)[0])}`, base, built_at: r.built_at,
         pptx_url: await sign(f.pptx), pdf_url: await sign(f.pdf) });
     }
     return json({ items });

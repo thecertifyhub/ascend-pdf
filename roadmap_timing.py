@@ -133,6 +133,11 @@ def retime(slide, clicks_ms, audio=None):
         ec.find(qn("p:stCondLst")).find(qn("p:cond")).set("delay", str(max(0, int(delay))))
         k.append(eff)
     if audio:
+        # PowerPoint's video export moves on when the last VISUAL effect ends and ignores audio still playing, so an
+        # invisible shape "appears" when the clip ends: the slide lasts as long as its narration, in the slideshow
+        # and in the export alike.
+        k.append(_hold_effect(slide, nid, int(audio[1])))
+    if audio:
         rk = timing.find(qn("p:tnLst")).find(qn("p:par")).find(qn("p:cTn")).find(qn("p:childTnLst"))
         for old in rk.findall(qn("p:audio")):
             rk.remove(old)
@@ -144,6 +149,25 @@ def retime(slide, clicks_ms, audio=None):
         c = etree.SubElement(en, qn("p:cond"), evt="onStopAudio", delay="0")
         te = etree.SubElement(c, qn("p:tgtEl")); etree.SubElement(te, qn("p:sldTgt"))
         te = etree.SubElement(mn, qn("p:tgtEl")); etree.SubElement(te, qn("p:spTgt"), spid=str(audio[0]))
+
+
+HOLD_NAME = "narration_hold"
+
+
+def _hold_effect(slide, nid, at_ms):
+    for sh in list(slide.shapes):
+        if sh.name == HOLD_NAME:
+            sh._element.getparent().remove(sh._element)
+    hold = slide.shapes.add_shape(1, 0, 0, 12700, 12700)
+    hold.name = HOLD_NAME
+    hold.fill.background(); hold.line.fill.background()
+    spid = hold.shape_id
+    return etree.fromstring(
+        f'<p:par xmlns:p="{P}"><p:cTn id="{nid()}" presetID="1" presetClass="entr" presetSubtype="0" fill="hold" '
+        f'nodeType="withEffect"><p:stCondLst><p:cond delay="{max(0, at_ms - 1)}"/></p:stCondLst><p:childTnLst>'
+        f'<p:set><p:cBhvr><p:cTn id="{nid()}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>'
+        f'<p:tgtEl><p:spTgt spid="{spid}"/></p:tgtEl><p:attrNameLst><p:attrName>style.visibility</p:attrName>'
+        f'</p:attrNameLst></p:cBhvr><p:to><p:strVal val="visible"/></p:to></p:set></p:childTnLst></p:cTn></p:par>')
 
 
 def _insert_timing(sld, timing):
