@@ -5,6 +5,7 @@
 // POST {"action":"video_slot", "request_id"}    -> an upload slot in roadmap-videos for the exported MP4
 // POST {"action":"video_start", "request_id", "size"} -> a resumable upload; then the raw 6 MB chunks are POSTed with
 //                                                  headers x-key, x-upload-url, x-chunk-offset
+// POST {"action":"video_offset", "request_id", "upload_url"} -> bytes the server holds (resume point)
 // POST {"action":"video_done", "request_id", "path"} -> the page now plays that video (status video_ready)
 import { createClient } from "jsr:@supabase/supabase-js@2";
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -71,6 +72,14 @@ Deno.serve(async (req) => {
     const loc = c.headers.get("location"); const t = await c.text();
     if (!loc) return json({ error: `start ${c.status}: ${t.slice(0, 200)}` }, 502);
     return json({ path, upload_url: loc, chunk: 6 * 1024 * 1024 });
+  }
+  if (b.action === "video_offset") {
+    // how much of a chunked upload the server really holds (to resume exactly there after a failed chunk)
+    const url = String(b.upload_url ?? "");
+    if (!url.startsWith(TUS + "/")) return json({ error: "bad upload url" }, 400);
+    const h = await fetch(url, { method: "HEAD", headers: tusHeaders });
+    await h.text();
+    return json({ status: h.status, offset: Number(h.headers.get("upload-offset") ?? -1) });
   }
   if (b.action === "video_done") {
     const path = String(b.path ?? "");
