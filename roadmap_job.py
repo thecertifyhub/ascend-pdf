@@ -85,8 +85,8 @@ def _run(req_id):
         pdf = roadmap.to_pdf(pptx)
         _save(req_id, job["request"], {"pptx": pptx, "pdf": pdf}, meta)
         engine.log("roadmap", req_id, "built", meta)
-        if job.get("voice"):
-            _video(req_id, pptx)
+        # The video is exported by PowerPoint on Christian's PC (pc/Export_Roadmaps.bat): it renders the deck more
+        # cleanly than the server could. roadmap_video.py (server-made video) is kept but no longer called.
     except Exception as e:
         engine.log("roadmap", req_id, "failed", traceback.format_exc()[-1500:])
         try:
