@@ -14,11 +14,13 @@ $log  = Join-Path $here 'export_log.txt'
 $work = Join-Path $env:TEMP 'ascend_roadmaps'
 New-Item -ItemType Directory -Force $work | Out-Null
 
-function Say($m) { $t = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $m"; Write-Host $t; Add-Content -Path $log -Value $t }
+function Say($m) { $t = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $m"; Write-Host $t; Add-Content -Path $log -Value $t -Encoding UTF8 }
 function Api($body) {
   $body.key = $key
   $bytes = [Text.Encoding]::UTF8.GetBytes(($body | ConvertTo-Json -Compress))
-  Invoke-RestMethod -Method Post -Uri $api -ContentType 'application/json; charset=utf-8' -Body $bytes
+  # read as UTF-8 (Windows PowerShell 5 would otherwise garble accents such as the e in Herve)
+  $r = Invoke-WebRequest -UseBasicParsing -Method Post -Uri $api -ContentType 'application/json; charset=utf-8' -Body $bytes
+  [Text.Encoding]::UTF8.GetString($r.RawContentStream.ToArray()) | ConvertFrom-Json
 }
 
 $list = Api @{ action = 'list' }
@@ -35,9 +37,15 @@ foreach ($it in $list.items) {
     New-Item -ItemType Directory -Force $dir | Out-Null
     $pptx = Join-Path $work "$($it.base).pptx"
     $mp4w = Join-Path $work "$($it.base).mp4"
-    Invoke-WebRequest -UseBasicParsing -Uri $it.pptx_url -OutFile $pptx
+    $dest = Join-Path $dir "$($it.base).mp4"
     Invoke-WebRequest -UseBasicParsing -Uri $it.pdf_url -OutFile (Join-Path $dir "$($it.base).pdf")
-    Say 'Deck and PDF downloaded. PowerPoint is exporting the video (about as long as the video itself)...'
+    if (Test-Path $dest) {
+      # exported on an earlier run whose upload failed: upload it again, no new export
+      Say 'Video already exported on an earlier run: uploading it again.'
+      Copy-Item $dest $mp4w -Force
+    } else {
+    Invoke-WebRequest -UseBasicParsing -Uri $it.pptx_url -OutFile $pptx
+    Say 'Deck and PDF downloaded. PowerPoint is exporting the video...'
     if (Test-Path $mp4w) { Remove-Item $mp4w -Force }
 
     # Open(FileName, ReadOnly, Untitled, WithWindow); CreateVideo(FileName, UseTimingsAndNarrations,
@@ -51,9 +59,9 @@ foreach ($it in $list.items) {
     $mb = [math]::Round((Get-Item $mp4w).Length / 1MB)
     Say "Video exported ($mb MB)."
 
-    $dest = Join-Path $dir "$($it.base).mp4"
     Copy-Item $mp4w $dest -Force
     Say "Saved in $dir"
+    }
 
     $slot = Api @{ action = 'video_slot'; request_id = $it.id }
     Invoke-WebRequest -UseBasicParsing -Method Put -Uri $slot.signed_url -InFile $mp4w -ContentType 'video/mp4' -Headers @{ 'x-upsert' = 'true' } | Out-Null
@@ -61,7 +69,8 @@ foreach ($it in $list.items) {
     Say 'Uploaded: the lead''s page now plays this video.'
     Remove-Item $pptx, $mp4w -Force -ErrorAction SilentlyContinue
   } catch {
-    Say "FAILED for $($it.name): $($_.Exception.Message)"
+    $detail = if ($_.ErrorDetails -and $_.ErrorDetails.Message) { " | $($_.ErrorDetails.Message)" } else { '' }
+    Say "FAILED for $($it.name): $($_.Exception.Message)$detail"
     try { if ($pres) { $pres.Close() } } catch {}
   }
 }
