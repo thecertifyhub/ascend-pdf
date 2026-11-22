@@ -1,5 +1,5 @@
-// roadmap-page: public API behind the lead's personal roadmap page (thecertifyhub.com/roadmap/?id=<token>).
-// GET  ?t=<token>                       -> what the page shows (first name, language, role, video and PDF links, booking link)
+// roadmap-page: public API behind the lead's personal roadmap page (ascendleadershipgroup.ca/roadmap/?id=<token>).
+// GET  ?t=<token>                       -> what the page shows (first name, language, role, video, thumbnail and PDF links, booking link)
 // POST {"t": "<token>", "event": "..."} -> records a viewing event in roadmap_views
 // The token (36 random characters, roadmap_requests.token) is the only key: no list, no search, nothing else exposed.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -30,14 +30,16 @@ Deno.serve(async (r) => {
     const q = await byToken(u.searchParams.get("t") ?? "");
     if (!q) return json({ error: "not_found" }, 404);
     const lang = q.language === "FR" ? "FR" : "EN";
-    const [{ data: d }, { data: f }, { data: s }] = await Promise.all([
+    const [{ data: d }, { data: f }, { data: s }, { data: th }] = await Promise.all([
       sb.from("roadmap_drafts").select("json_approved").eq("request_id", q.id).maybeSingle(),
       sb.from("roadmap_files").select("path").eq("request_id", q.id).eq("kind", "pdf").maybeSingle(),
       sb.from("roadmap_machine_settings").select("booking_url_en,booking_url_fr").eq("id", 1).single(),
+      sb.from("roadmap_files").select("path").eq("request_id", q.id).eq("kind", "poster").maybeSingle(),
     ]);
     const doc = d?.json_approved ?? {};
     const role = String(doc.script_vars?.target_role ?? doc.target?.target_role_label ?? q.target_role ?? "").trim();
     const video = await sb.storage.from("roadmap-videos").createSignedUrl(q.video_path, LINK_S);
+    const poster = th?.path ? await sb.storage.from("roadmap-decks").createSignedUrl(th.path, LINK_S) : null;   // slide 1
     const pdf = f?.path ? await sb.storage.from("roadmap-decks").createSignedUrl(f.path, LINK_S, { download: true }) : null;
     await sb.from("roadmap_views").insert({ request_id: q.id, event: "open" });
     return json({
@@ -45,6 +47,7 @@ Deno.serve(async (r) => {
       lang, role,
       video_url: video.data?.signedUrl ?? null,
       pdf_url: pdf?.data?.signedUrl ?? null,
+      poster_url: poster?.data?.signedUrl ?? null,
       booking_url: (lang === "FR" ? s?.booking_url_fr : s?.booking_url_en) ?? null,
     });
   }
