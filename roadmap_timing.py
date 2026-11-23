@@ -235,6 +235,15 @@ def prune_dangling(prs):
     return fixed
 
 
+def stretch(blob, tempo):
+    """Slow down (tempo < 1) or speed up a clip without changing the pitch (ffmpeg atempo), same MP3 format."""
+    import subprocess
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "mp3", "-i", "pipe:0",
+                        "-filter:a", f"atempo={tempo}", "-c:a", "libmp3lame", "-b:a", "128k", "-ar", "44100", "-f", "mp3", "pipe:1"],
+                       input=blob, capture_output=True, check=True)
+    return r.stdout
+
+
 def apply(prs, manifest, log=None):
     """prs: the 17-slide deck before any slide is dropped. manifest: list from the voice manifest."""
     by = {int(m["slide"]): m for m in (manifest or [])}
@@ -248,10 +257,16 @@ def apply(prs, manifest, log=None):
             set_advance(slide, NO_AUDIO_MS)
             continue
         blob = fetch(m["url"])
+        # optional "tempo" in the manifest entry (e.g. 0.98): the clip is re-timed here, and so are its length and reveals
+        tempo = float(m.get("tempo") or 1)
+        ms, clicks = int(m["ms"]), [int(x) for x in m.get("clicks") or []]
+        if abs(tempo - 1) > 1e-6:
+            blob = stretch(blob, tempo)
+            ms, clicks = round(ms / tempo), [round(c / tempo) for c in clicks]
         spid = add_audio(slide, blob, name=f"narration_{n}")
         # PowerPoint holds a slide until its animations end, and may count "After" only from then: the narration
         # effect lasts the whole slide (clip + pad) and the slide advances 0 ms after it ends.
-        retime(slide, [int(x) for x in m.get("clicks") or []], audio=(spid, int(m["ms"]) + ADVANCE_PAD_MS))
+        retime(slide, clicks, audio=(spid, ms + ADVANCE_PAD_MS))
         set_advance(slide, 0)
         if log is not None:
-            log.append(dict(slide=n, ms=int(m["ms"]), clicks=len(m.get("clicks") or []), bytes=len(blob)))
+            log.append(dict(slide=n, ms=ms, clicks=len(clicks), bytes=len(blob), tempo=tempo))
