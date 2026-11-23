@@ -11,7 +11,7 @@ const CORS = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
-const EVENTS = new Set(["open", "play", "25", "50", "75", "100", "pdf", "book_click"]);
+const EVENTS = new Set(["open", "play", "25", "50", "75", "90", "100", "pdf", "book_click"]);
 const LINK_S = 60 * 60 * 6;   // video and PDF links last 6 hours; the page asks again on every visit
 
 async function byToken(t: string) {

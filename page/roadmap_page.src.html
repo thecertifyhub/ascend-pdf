@@ -240,7 +240,7 @@
       if (d.pdf_url) { pdf.href = d.pdf_url; txt("pdf_t", t.pdf); pdf.addEventListener("click", function () { send("pdf"); }); }
       else pdf.hidden = true;
 
-      var v = $("video"), play = $("play"), marks = [25, 50, 75], sent = {}, played = false;
+      var v = $("video"), play = $("play"), marks = [25, 50, 75, 90], sent = {}, played = false;
       play.setAttribute("aria-label", t.play);
       if (d.poster_url) v.poster = d.poster_url;   // slide 1 until the video plays
       v.src = d.video_url;
