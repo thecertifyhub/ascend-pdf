@@ -90,6 +90,24 @@ def roadmap_poster(req_id):
         return jsonify(ok=False, error=f"{type(e).__name__}: {e}"[:500]), 500
 
 
+@app.post("/tools/tempo")
+def tools_tempo():
+    """Listening tests: one MP3 re-timed at several speeds (pitch kept). Body {"src": <signed url>,
+    "outs": [{"tempo": 0.98, "put_url": <signed upload url>}, ...]}. Runs in the background."""
+    if not _authorized():
+        return jsonify(error="unauthorized"), 401
+    import threading, urllib.request, roadmap_timing
+    b = request.get_json(silent=True) or {}
+    def work():
+        src = roadmap_timing.fetch(b["src"])
+        for o in b.get("outs") or []:
+            out = roadmap_timing.stretch(src, float(o["tempo"]))
+            req = urllib.request.Request(o["put_url"], data=out, method="PUT", headers={"Content-Type": "audio/mpeg"})
+            urllib.request.urlopen(req, timeout=120).read()
+    threading.Thread(target=work, daemon=True).start()
+    return jsonify(ok=True, outs=len(b.get("outs") or [])), 202
+
+
 @app.route("/jobs/<job_id>/run", methods=["GET", "POST"])
 def run_job(job_id):
     if not _authorized():
