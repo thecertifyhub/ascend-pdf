@@ -41,10 +41,14 @@ async function templates(lang: Lang) {
   return { T, version: v };
 }
 
-async function tts(text: string, voice: string, s: any): Promise<Uint8Array> {
+/** model and speed per language: tts_model / tts_tempo_en for English, tts_model_fr / tts_tempo_fr for French */
+const modelFor = (s: any, lang: Lang) => (lang === "FR" ? s.tts_model_fr ?? s.tts_model : s.tts_model) ?? "eleven_v3";
+const tempoFor = (s: any, lang: Lang) => Number((lang === "FR" ? s.tts_tempo_fr : s.tts_tempo_en) ?? 1) || 1;
+
+async function tts(text: string, voice: string, s: any, model: string): Promise<Uint8Array> {
   const r = await fetch(`${EL}/v1/text-to-speech/${voice}?output_format=mp3_44100_128`, {
     method: "POST", headers: { "xi-api-key": key(), "Content-Type": "application/json", accept: "audio/mpeg" },
-    body: JSON.stringify({ text, model_id: s.tts_model ?? "eleven_v3", voice_settings: { stability: Number(s.tts_stability ?? 1.0) } }),
+    body: JSON.stringify({ text, model_id: model, voice_settings: { stability: Number(s.tts_stability ?? 1.0) } }),
   });
   if (!r.ok) throw new Error(`ElevenLabs TTS ${r.status}: ${(await r.text()).slice(0, 300)}`);
   return new Uint8Array(await r.arrayBuffer());
@@ -62,10 +66,10 @@ async function align(mp3: Uint8Array, text: string) {
 type Clip = { slide: number; bytes: Uint8Array; ms: number; clicks: number[]; text: string };
 
 /** Voice a piece made of consecutive slides; cut it into one clip per slide. */
-async function voicePiece(slides: SlideText[], voice: string, s: any, log: any[]): Promise<Clip[]> {
+async function voicePiece(slides: SlideText[], voice: string, s: any, log: any[], model: string): Promise<Clip[]> {
   const parsed = slides.map((x) => ({ slide: x.slide, ...markers(x.text) }));
   const text = parsed.map((p) => p.clean).join("\n\n");
-  const mp3 = await tts(text, voice, s);
+  const mp3 = await tts(text, voice, s, model);
   const words = await align(mp3, text);
   const mine = parsed.flatMap((p, k) => p.words.map((w, i) => ({ k, i, w })));
   // map my words to aligned words: same count -> by index; otherwise greedy by normalized text
@@ -80,7 +84,7 @@ async function voicePiece(slides: SlideText[], voice: string, s: any, log: any[]
       at[j] = words[hit]; q = hit + 1;
     }
   }
-  log.push({ step: "piece", slides: slides.map((x) => x.slide), chars: text.length, bytes: mp3.length, words: words.length, mine: mine.length });
+  log.push({ step: "piece", slides: slides.map((x) => x.slide), chars: text.length, bytes: mp3.length, words: words.length, mine: mine.length, model });
   const fr = frameList(mp3);
   const total = fr.length * FRAME_S;
   // slide k occupies my words [first[k], first[k+1])
@@ -131,7 +135,7 @@ async function standard(lang: Lang, s: any, log: any[], force = false) {
   const { data: have } = await sb.from("roadmap_audio").select("slide,path,ms,clicks,text,voice_id,tts_model").is("request_id", null).eq("language", lang).eq("version", version);
   const voice = lang === "FR" ? s.roadmap_voice_id_fr : s.roadmap_voice_id;
   if (!voice) throw new Error(`no roadmap voice set for ${lang} (roadmap_machine_settings)`);
-  const model = s.tts_model ?? "eleven_v3";
+  const model = modelFor(s, lang);
   const st = standardTexts(T);
   const byslide = new Map((have ?? []).map((r: any) => [r.slide, r]));
   const todo = force || (have ?? []).length !== st.length ? st
@@ -145,7 +149,7 @@ async function standard(lang: Lang, s: any, log: any[], force = false) {
     if (last && STANDARD_RUN(last[last.length - 1].slide) === STANDARD_RUN(x.slide)) last.push(x); else runs.push([x]);
   }
   const clips: any[] = [];
-  for (const r of runs) clips.push(...await voicePiece(r, voice, s, log));
+  for (const r of runs) clips.push(...await voicePiece(r, voice, s, log, model));
   log.push({ step: "standard", lang, version, recorded: clips.map((c) => c.slide) });
   const rows = [];
   for (const c of clips) {
@@ -177,21 +181,22 @@ async function voiceRequest(id: string) {
     const voice = lang === "FR" ? s.roadmap_voice_id_fr : s.roadmap_voice_id;
     const pt = personalTexts(doc, r, T, lang);
     // pieces: slides 1-6, then slide 10 (+ slide 15 when the roadmap has a payback line)
-    const clips = [...await voicePiece(pt.filter((x) => x.slide <= 6), voice, s, log),
-      ...await voicePiece(pt.filter((x) => x.slide === 10 || x.slide === 15), voice, s, log)];
+    const model = modelFor(s, lang), tempo = tempoFor(s, lang);
+    const clips = [...await voicePiece(pt.filter((x) => x.slide <= 6), voice, s, log, model),
+      ...await voicePiece(pt.filter((x) => x.slide === 10 || x.slide === 15), voice, s, log, model)];
     await sb.from("roadmap_audio").delete().eq("request_id", id);
     const rows = [];
     for (const c of clips) {
       const path = `${id}/s${String(c.slide).padStart(2, "0")}.mp3`;
       await store(path, c.bytes);
-      rows.push({ request_id: id, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice, tts_model: s.tts_model ?? "eleven_v3" });
+      rows.push({ request_id: id, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice, tts_model: model });
     }
     const { error } = await sb.from("roadmap_audio").insert(rows);
     if (error) throw new Error("roadmap_audio: " + error.message);
     const mine = new Set(rows.map((x) => x.slide));   // a personal clip replaces the standard one (slide 15)
     const all = [...rows, ...std.filter((x: any) => !mine.has(x.slide))].sort((a: any, b: any) => a.slide - b.slide);
     const manifest = [];
-    for (const a of all) manifest.push({ slide: a.slide, url: await sign(a.path), ms: a.ms, clicks: a.clicks });
+    for (const a of all) manifest.push({ slide: a.slide, url: await sign(a.path), ms: a.ms, clicks: a.clicks, ...(tempo !== 1 ? { tempo } : {}) });
     const { drop } = plan(doc);
     await sb.from("roadmap_requests").update({ status: "voiced", voice_manifest: { slides: manifest, dropped: drop, version, log },
       updated_at: new Date().toISOString() }).eq("id", id);
