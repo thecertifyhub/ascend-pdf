@@ -12,7 +12,7 @@
 // slides are recorded once per language and template version and reused. The result is a manifest per lead: for every
 // deck slide (1 to 17), a signed URL of its clip, its length and its reveal times, read by the build service.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { personalTexts, standardTexts, markers, plan, type Lang, type SlideText } from "./fill.ts";
+import { personalTexts, standardTexts, markers, plan, type Lang, type SlideText } from "https://raw.githubusercontent.com/thecertifyhub/ascend-pdf/4939f9ff7934f6d1cd07ceb1f090185b17f11dda/voice/roadmap-voice/fill.ts";
 import { frameList, slice, FRAME_S } from "./mp3.ts";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -125,16 +125,18 @@ async function sign(path: string) {
 }
 
 /** Standard clips for a language at the current template version. Recorded once; when a template text changes or the
- *  language's voice changes, only the slides concerned are recorded again (credits). force = record all ten. */
+ *  language's voice or the ElevenLabs model changes, only the slides concerned are recorded again (credits). force = record all ten. */
 async function standard(lang: Lang, s: any, log: any[], force = false) {
   const { T, version } = await templates(lang);
-  const { data: have } = await sb.from("roadmap_audio").select("slide,path,ms,clicks,text,voice_id").is("request_id", null).eq("language", lang).eq("version", version);
+  const { data: have } = await sb.from("roadmap_audio").select("slide,path,ms,clicks,text,voice_id,tts_model").is("request_id", null).eq("language", lang).eq("version", version);
   const voice = lang === "FR" ? s.roadmap_voice_id_fr : s.roadmap_voice_id;
   if (!voice) throw new Error(`no roadmap voice set for ${lang} (roadmap_machine_settings)`);
+  const model = s.tts_model ?? "eleven_v3";
   const st = standardTexts(T);
   const byslide = new Map((have ?? []).map((r: any) => [r.slide, r]));
   const todo = force || (have ?? []).length !== st.length ? st
-    : st.filter((x) => byslide.get(x.slide)?.text !== markers(x.text).clean || byslide.get(x.slide)?.voice_id !== voice);
+    : st.filter((x) => byslide.get(x.slide)?.text !== markers(x.text).clean || byslide.get(x.slide)?.voice_id !== voice
+      || byslide.get(x.slide)?.tts_model !== model);
   if (!todo.length) return have!;
   // one ElevenLabs request per run of consecutive slides (7-9, 11-17), only for the slides to record
   const runs: SlideText[][] = [];
@@ -149,7 +151,7 @@ async function standard(lang: Lang, s: any, log: any[], force = false) {
   for (const c of clips) {
     const path = `standard/${lang}/v${version}/s${String(c.slide).padStart(2, "0")}.mp3`;
     await store(path, c.bytes);
-    rows.push({ request_id: null, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice });
+    rows.push({ request_id: null, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice, tts_model: model });
   }
   await sb.from("roadmap_audio").delete().is("request_id", null).eq("language", lang).eq("version", version).in("slide", rows.map((r) => r.slide));
   const { error } = await sb.from("roadmap_audio").insert(rows);
@@ -182,7 +184,7 @@ async function voiceRequest(id: string) {
     for (const c of clips) {
       const path = `${id}/s${String(c.slide).padStart(2, "0")}.mp3`;
       await store(path, c.bytes);
-      rows.push({ request_id: id, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice });
+      rows.push({ request_id: id, language: lang, version, slide: c.slide, path, ms: c.ms, clicks: c.clicks, text: c.text, bytes: c.bytes.length, voice_id: voice, tts_model: s.tts_model ?? "eleven_v3" });
     }
     const { error } = await sb.from("roadmap_audio").insert(rows);
     if (error) throw new Error("roadmap_audio: " + error.message);
