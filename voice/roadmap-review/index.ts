@@ -133,6 +133,39 @@ Deno.serve(async (r) => {
     return json({ audio: b64(new Uint8Array(await t.arrayBuffer())), text });
   }
 
+  // ---- rewrite one gap card after the reviewer picks another dimension (Claude, same rules as the generator)
+  if (a === "rewrite_gap") {
+    const i = Number(body.i), n = Number(body.n);
+    if (!(i >= 0 && i <= 2) || !(n >= 1 && n <= 8)) return json({ error: "bad gap" }, 400);
+    const key = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!key) return json({ error: "ANTHROPIC_API_KEY secret is not set" }, 500);
+    const doc = body.doc || {};
+    const { data: s } = await sb.from("roadmap_machine_settings").select("generator_model").eq("id", 1).single();
+    const others = (doc.gaps || []).filter((_: any, k: number) => k !== i).map((g: any) => TITLES[lang][Number(g.n)] + ": " + (g.text || ""));
+    const system = [
+      "You write one gap card for a free career roadmap in maintenance and reliability. Return JSON only: {\"text\", \"evidence\", \"sentence\"}.",
+      `Language: ${lang === "FR" ? "French, vous form, full accents, French number format (500 $)" : "English"}. Speak to the lead directly. Never use the lead's name.`,
+      `The gap dimension is: "${TITLES[lang][n]}".`,
+      "text: exactly two sentences, 40 words maximum in total, each sentence under 30 words. Sentence 1 names a real strength from the resume. Sentence 2 says what the target role expects in this dimension that is not shown yet.",
+      "evidence: one short line quoting or citing the resume facts you used (reviewer only, English).",
+      "sentence: one spoken sentence for the narration of this gap, under 30 words, natural when read aloud.",
+      "Rules: only facts from the resume; no numbers that are not in the resume; explain any acronym in parentheses the first time; no em dashes;",
+      "never write 'resume shows', 'your resume', 'your profile', 'appears to', 'seems to', 'votre CV', 'semble'; do not repeat the other two gaps.",
+    ].join("\n");
+    const user = JSON.stringify({ target_role: doc.target?.target_role_label || req.target_title || req.target_family, current_title: doc.today?.current_title,
+      pillar_scores: (doc.pillars || []).map((p: any) => ({ name: p.name, score: p.score })), other_gaps: others, resume_text: String(req.resume_text || "").slice(0, 15000) });
+    const r2 = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model: s?.generator_model || "claude-opus-5-5", max_tokens: 1200, system, messages: [{ role: "user", content: user }] }) });
+    const jj = await r2.json();
+    if (!r2.ok) return json({ error: "Claude: " + (jj?.error?.message || r2.status) }, 502);
+    const raw = (jj.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("");
+    try {
+      const o = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
+      return json({ text: String(o.text || "").replace(/\u2014/g, ","), evidence: String(o.evidence || ""), sentence: String(o.sentence || "").replace(/\u2014/g, ","), title: TITLES[lang][n] });
+    } catch { return json({ error: "Could not read the rewrite. Try again." }, 502); }
+  }
+
   const changes: any[] = Array.isArray(body.changes) ? body.changes : [];
   const logEdits = async () => {
     if (!changes.length) return;

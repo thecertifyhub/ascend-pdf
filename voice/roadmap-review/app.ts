@@ -300,11 +300,30 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     wrap.appendChild(req5);
 
     var gapsCard = el("div", { class: "card" }, [el("h3", { text: "Slide 6. The three gaps" }), el("div", { class: "msg", text: "Expected by the rule: " + (doc.expected_dimensions || []).map(function (n) { return DIMS[lang][n]; }).join(", ") })]);
+    var gapSentInputs = [];
     (doc.gaps || []).forEach(function (g, i) {
-      gapsCard.appendChild(el("div", { style: "margin-top:10px" }, [
-        field("gaps." + i + ".n", "Gap " + (i + 1), "select", [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return [n, n + ". " + DIMS[lang][n]]; })),
-        field("gaps." + i + ".text", null, "area"),
-        el("div", { class: "ev", text: "Evidence: " + (g.evidence || "") })]));
+      var fSel = field("gaps." + i + ".n", "Gap " + (i + 1), "select", [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return [n, n + ". " + DIMS[lang][n]]; }));
+      var fText = field("gaps." + i + ".text", null, "area");
+      var ev = el("div", { class: "ev", text: "Evidence: " + (g.evidence || "") });
+      var note = el("div", { class: "msg" });
+      var sel = fSel.querySelector("select"), area = fText.querySelector("textarea");
+      /* a new dimension needs a new text: Claude rewrites the card and its spoken sentence from the resume */
+      sel.addEventListener("change", async function () {
+        var n = Number(sel.value);
+        note.textContent = "Rewriting this gap for " + DIMS[lang][n] + "...";
+        sel.disabled = true; area.disabled = true;
+        try {
+          var r = await api("rewrite_gap", { id: state.cur.id, i: i, n: n, doc: state.doc });
+          area.value = r.text; area.dispatchEvent(new Event("input"));
+          state.doc.gaps[i].evidence = r.evidence; state.doc.gaps[i].title = r.title;
+          ev.textContent = "Evidence: " + r.evidence;
+          var gs = gapSentInputs[i];
+          if (gs && r.sentence) { gs.value = r.sentence; gs.dispatchEvent(new Event("input")); }
+          note.textContent = "Rewritten. Check the text and the spoken sentence " + (i + 1) + " below, edit if needed.";
+        } catch (e) { note.textContent = "Rewrite failed: " + e.message + ". Edit the text by hand."; }
+        sel.disabled = false; area.disabled = false;
+      });
+      gapsCard.appendChild(el("div", { style: "margin-top:10px" }, [fSel, fText, ev, note]));
     });
     wrap.appendChild(gapsCard);
 
@@ -323,7 +342,7 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     var svKeys = ["target_role", "current_role", "location", "years", "credentials", "target_industry", "target_regions", "target_field", "expertise_have", "experience_have"];
     var g2 = el("div", { class: "grid2" }, svKeys.filter(function (k) { return doc.script_vars && k in doc.script_vars; }).map(function (k) { return field("script_vars." + k, k.replace(/_/g, " ")); }));
     sv.appendChild(g2);
-    (doc.script_vars && doc.script_vars.gap_sentences || []).forEach(function (s, i) { sv.appendChild(field("script_vars.gap_sentences." + i, "gap sentence " + (i + 1), "area")); });
+    (doc.script_vars && doc.script_vars.gap_sentences || []).forEach(function (s, i) { var f = field("script_vars.gap_sentences." + i, "gap sentence " + (i + 1), "area"); gapSentInputs[i] = f.querySelector("textarea"); sv.appendChild(f); });
     wrap.appendChild(sv);
 
     var reason = el("input", { placeholder: "Why you changed it (optional, helps the generator learn)" });
