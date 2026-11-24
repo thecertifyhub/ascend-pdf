@@ -116,7 +116,7 @@ async function run(id: string) {
     available_market_regions: regionsAvailable,
     resume_text: text,
   };
-  const extra = `\n\n## Extra output keys (code uses them to pick market rows)\n- current_occupation_code: the code from available_occupations for the person's CURRENT job at their real level (trade or technician code unless an engineering degree or licence is in the resume). It must be the same occupation, not a related one: a design or engineering technician is not a tradesperson, an electrical technician is not an industrial electrician. If no listed code is the same occupation, return null with a flag (code "no_current_occupation").\n- current_country: two-letter country code of where the person works today.\n- market_regions: 1 or 2 codes from available_market_regions matching the target location (and a second region only if the form or note names one). "CA" means Canada national. Empty if the target location is outside Canada (flag "no_market_data").\npillars[].name is always the English pillar name exactly as listed (it is a key, not shown). Write all lead-facing text in ${lang === "FR" ? "French" : "English"}.`;
+  const extra = `\n\n## Extra output keys (code uses them to pick market rows)\n- current_occupation_code: the code from available_occupations for the person's CURRENT job at their real level (trade or technician code unless an engineering degree or licence is in the resume). It must be the same occupation, not a related one: a design or engineering technician is not a tradesperson, an electrical technician is not an industrial electrician. If no listed code is the same occupation, return null with a flag (code "no_current_occupation").\n- in_role: true if the person still holds their most recent job today (no end date, or "Present"/"Current"/"Aujourd'hui"); false if that job has a past end date or the resume or note says they are between jobs. When false, today.current_title and today.employer describe the most recent job and add a flag (code "not_in_role").\n- current_country: two-letter country code of where the person works (or last worked).\n- market_regions: 1 or 2 codes from available_market_regions matching the target location (and a second region only if the form or note names one). "CA" means Canada national. Empty if the target location is outside Canada (flag "no_market_data").\npillars[].name is always the English pillar name exactly as listed (it is a key, not shown). Write all lead-facing text in ${lang === "FR" ? "French" : "English"}.`;
   const system = rules!.rules_text + extra;
 
   const byFam = (f: string) => (roles || []).find((r: any) => r.family === f);
@@ -192,6 +192,12 @@ async function run(id: string) {
   if (req.in_mr === false) flags.push({ code: "not_in_mr", reason: "lead says they do not work in maintenance or reliability today" });
   if (fam && out?.pillars?.length === 5) out.expected_dimensions = selectDimensions(profile, out.pillars.map((p: any) => p.score));
   (out.pillars || []).forEach((p: any) => { if (Number.isInteger(p.score)) p.status = bandOf(p.score); });
+
+  // Slide 2 wording: "Today, you work as" only when the lead still holds the job; otherwise "Your most recent role was".
+  out.today = { ...(out.today || {}), in_role: out.in_role === false || (out.flags || []).some((f: any) => f?.code === "not_in_role") ? false : true };
+  delete out.in_role;
+  // One location: the narration reads today.location (the field shown and corrected on the review page).
+  if (out.script_vars && out.today.location) out.script_vars.location = out.today.location;
 
   const draft = {
     ...out,

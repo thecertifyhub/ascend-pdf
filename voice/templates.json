@@ -35,7 +35,8 @@
   "s16": "The most logical next step is simple. [[1]]Book your fifteen-minute roadmap debrief as soon as you finish this presentation. We will answer your questions, confirm your path, [[2]]and unlock your five-hundred-dollar discount. [[3]]Then secure your place in the program with a two-hundred-dollar deposit, and choose your start date. [[4]]To book, use the button right below this video.",
   "s17": "[[1]]Thank you for watching. A written copy of this roadmap is attached to the email, so you can come back to it anytime. [[2]]We look forward to speaking with you, [[3]]and to helping you take the next step in your career.",
   "s15_roi": "Based on the wage gap we looked at earlier, the guided program pays for itself in {roi_range} in your new role.",
-  "s04_prov_moderate": "Now, the demand. Job Bank, the Government of Canada's job site, rates the job outlook of each occupation from one to five stars. {ratings} [[4]]Where it is moderate, employers can choose. The question is how you stand out among qualified candidates."
+  "s04_prov_moderate": "Now, the demand. Job Bank, the Government of Canada's job site, rates the job outlook of each occupation from one to five stars. {ratings} [[4]]Where it is moderate, employers can choose. The question is how you stand out among qualified candidates.",
+  "s02_past": "[[1]]Let us start with where you are. Most recently, you worked as {current_role}{at_employer}{in_location}. You bring {years} of experience{with_credentials}. [[2]]Your target is the {target_role} role, [[3]]in {target_industry}, in {target_regions}."
  },
  "FR": {
   "s01": "Bonjour, et merci de prendre le temps de regarder cette feuille de route. Nous l'avons préparée pour votre évolution vers le poste {de_target_role}. [[1]]Dans les prochaines minutes, vous verrez où vous en êtes aujourd'hui, ce que le marché paie et recherche pour ce poste, [[2]]ce qui vous en sépare, et le chemin le plus logique pour combler cet écart.",
@@ -72,7 +73,8 @@
   "s16": "La prochaine étape la plus logique est simple. [[1]]Réservez votre débriefing de quinze minutes dès la fin de cette présentation. Nous répondrons à vos questions, confirmerons votre parcours [[2]]et débloquerons votre rabais de cinq cents dollars. [[3]]Confirmez ensuite votre place dans le programme avec un dépôt de deux cents dollars, et choisissez votre date de début. [[4]]Pour réserver, utilisez le bouton juste sous cette vidéo.",
   "s17": "[[1]]Merci de votre attention. Une copie écrite de cette feuille de route est jointe au courriel, pour que vous puissiez y revenir en tout temps. [[2]]Au plaisir d'échanger avec vous, [[3]]et de vous aider à franchir la prochaine étape de votre carrière.",
   "s15_roi": "D'après l'écart salarial vu plus tôt, le programme guidé est rentabilisé en {roi_range} dans votre nouveau poste.",
-  "s04_prov_moderate": "Regardons maintenant la demande. Guichet-Emplois, le site d'emploi du gouvernement du Canada, note les perspectives d'emploi de chaque profession de une à cinq étoiles. {ratings} [[4]]Là où elles sont modérées, les employeurs peuvent choisir. La question est de savoir comment vous démarquer parmi les candidats qualifiés."
+  "s04_prov_moderate": "Regardons maintenant la demande. Guichet-Emplois, le site d'emploi du gouvernement du Canada, note les perspectives d'emploi de chaque profession de une à cinq étoiles. {ratings} [[4]]Là où elles sont modérées, les employeurs peuvent choisir. La question est de savoir comment vous démarquer parmi les candidats qualifiés.",
+  "s02_past": "[[1]]Commençons par votre situation actuelle. Dans votre dernier poste, vous travailliez comme {current_role}{at_employer}{in_location}. Vous cumulez {years} d'expérience{with_credentials}. [[2]]Votre cible est le poste {de_target_role}, [[3]]dans {target_industry}{in_regions}."
  },
  "version_FR": 2
 }

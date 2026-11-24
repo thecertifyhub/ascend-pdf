@@ -153,13 +153,15 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     var inp;
     if (kind === "select") {
       inp = el("select", {}, opts.map(function (o) { return el("option", { value: String(o[0]), text: o[1] }); }));
-      inp.value = String(v == null ? "" : v);
+      var isBool = typeof opts[0][0] === "boolean";
+      inp.value = String(v == null ? (isBool ? opts[0][0] : "") : v);
     } else if (kind === "area") { inp = el("textarea"); inp.value = v == null ? "" : String(v); }
     else { inp = el("input"); inp.value = v == null ? "" : String(v); }
     function mark() { inp.classList.toggle("changed", JSON.stringify(get(state.doc, path)) !== JSON.stringify(ov)); }
     inp.addEventListener("input", function () {
       var nv = inp.value;
       if (kind === "select" && typeof ov === "number") nv = Number(nv);
+      if (kind === "select" && typeof opts[0][0] === "boolean") nv = nv === "true";
       set(state.doc, path, nv); mark();
     });
     mark();
@@ -280,7 +282,8 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     wrap = main;
 
     if (doc.today) wrap.appendChild(el("div", { class: "card" }, [el("h3", { text: "Slide 2. Today and target" }), el("div", { class: "grid2" }, [
-      field("today.current_title", "Current title"), field("today.location", "Current location"),
+      field("today.in_role", "Still in this role today?", "select", [[true, "Yes: script says \"Today, you work as\""], [false, "No: script says \"Most recently, you worked as\""]]), el("div"),
+      field("today.current_title", "Current or most recent title"), field("today.location", "Location (shown and spoken)"),
       field("target.target_role_label", "Target role label"), field("target.industry", "Target industry")])]));
 
     var m = doc.market || {};
@@ -339,7 +342,7 @@ export const APP_JS = String.raw`/* Ascend roadmap review page. Loaded by the sh
     wrap.appendChild(pil);
 
     var sv = el("div", { class: "card" }, [el("h3", { text: "Spoken script pieces" })]);
-    var svKeys = ["target_role", "current_role", "location", "years", "credentials", "target_industry", "target_regions", "target_field", "expertise_have", "experience_have"];
+    var svKeys = ["target_role", "current_role", "years", "credentials", "target_industry", "target_regions", "target_field", "expertise_have", "experience_have"];
     var g2 = el("div", { class: "grid2" }, svKeys.filter(function (k) { return doc.script_vars && k in doc.script_vars; }).map(function (k) { return field("script_vars." + k, k.replace(/_/g, " ")); }));
     sv.appendChild(g2);
     (doc.script_vars && doc.script_vars.gap_sentences || []).forEach(function (s, i) { var f = field("script_vars.gap_sentences." + i, "gap sentence " + (i + 1), "area"); gapSentInputs[i] = f.querySelector("textarea"); sv.appendChild(f); });

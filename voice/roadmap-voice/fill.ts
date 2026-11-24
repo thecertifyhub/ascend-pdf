@@ -156,7 +156,7 @@ export function personalTexts(doc: any, req: any, T: Templates, lang: Lang): Sli
   const emp = (td.employer ?? "").trim();   // only the generator's employer field (a title suffix can be a unit, not a company)
   let cur = (sv.current_role ?? "").trim();
   if (lang === "FR") cur = cur.replace(/^(un|une)\s+/i, "");
-  const loc = (sv.location ?? td.location ?? "").trim();
+  const loc = (td.location || sv.location || "").trim();   // the location field shown and corrected on the review page
   const v: Record<string, string> = {
     target_role: roleL, a_target_role: aAn(roleL), de_target_role: de(roleL),
     current_role: cur,
@@ -173,7 +173,7 @@ export function personalTexts(doc: any, req: any, T: Templates, lang: Lang): Sli
   const out: SlideText[] = [];
   const { drop, gap } = plan(doc);
   out.push({ slide: 1, text: withName(1, fill(T.s01, v), doc, req, lang) });
-  out.push({ slide: 2, text: fill(T.s02, v) });
+  out.push({ slide: 2, text: fill(td.in_role === false && T.s02_past ? T.s02_past : T.s02, v) });   // not in the job today: "Most recently, you worked as"
 
   // 3 market
   const rows = m.rows ?? [];

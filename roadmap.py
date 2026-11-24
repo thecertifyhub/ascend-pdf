@@ -73,7 +73,7 @@ TXT = {
         "prepared": "Prepared for {name}",
         "prepared_date": "Prepared for {name}",
         "path_to": "Your path to",
-        "role": "ROLE", "employer": "EMPLOYER AND LOCATION", "location_only": "LOCATION", "experience": "EXPERIENCE",
+        "role": "ROLE", "employer": "EMPLOYER AND LOCATION", "location_only": "LOCATION", "today_past": "MOST RECENT ROLE", "employer_past": "LAST EMPLOYER AND LOCATION", "experience": "EXPERIENCE",
         "credentials": "CREDENTIALS", "industry": "INDUSTRY", "location": "LOCATION",
         "m_title_gap": "Your next role pays more", "m_title_range": "What the market pays for your next role",
         "wage_data": "{period} wage data",
@@ -129,7 +129,7 @@ TXT = {
     "FR": {
         "prepared": "Préparé pour {name}",
         "path_to": "Votre prochain poste :",
-        "role": "POSTE", "employer": "EMPLOYEUR ET LIEU", "location_only": "LIEU", "experience": "EXPÉRIENCE",
+        "role": "POSTE", "employer": "EMPLOYEUR ET LIEU", "location_only": "LIEU", "today_past": "DERNIER POSTE", "employer_past": "DERNIER EMPLOYEUR ET LIEU", "experience": "EXPÉRIENCE",
         "credentials": "TITRES ET CERTIFICATIONS", "industry": "INDUSTRIE", "location": "LIEU",
         "m_title_gap": "Votre prochain poste paie davantage", "m_title_range": "Ce que le marché paie pour votre prochain poste",
         "wage_data": "Données salariales {period}",
@@ -339,8 +339,11 @@ def build(job):
     title_now, emp = td.get("current_title") or "", td.get("employer")
     if not emp and ", " in title_now:
         title_now, emp = title_now.rsplit(", ", 1)
+    past = td.get("in_role") is False   # not in the job today: the card reads "most recent role", like the narration
+    if past:
+        set_lines(s2["today_label"], [T["today_past"]])
     set_lines(s2["today_role_text"], [T["role"], title_now])
-    set_lines(s2["today_employ_text"], [T["employer"] if emp else T["location_only"], ", ".join(x for x in [emp, td.get("location")] if x)])
+    set_lines(s2["today_employ_text"], [(T["employer_past"] if past else T["employer"]) if emp else T["location_only"], ", ".join(x for x in [emp, td.get("location")] if x)])
     exp = td.get("experience_line")
     if not exp and isinstance(td.get("years"), (int, float)) and td.get("industry"):
         exp = T["exp_years"].format(y=int(td["years"]), ind=td["industry"][:1].lower() + td["industry"][1:])
