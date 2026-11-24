@@ -12,7 +12,7 @@
 // slides are recorded once per language and template version and reused. The result is a manifest per lead: for every
 // deck slide (1 to 17), a signed URL of its clip, its length and its reveal times, read by the build service.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { personalTexts, standardTexts, markers, plan, type Lang, type SlideText } from "https://raw.githubusercontent.com/thecertifyhub/ascend-pdf/4939f9ff7934f6d1cd07ceb1f090185b17f11dda/voice/roadmap-voice/fill.ts";
+import { personalTexts, standardTexts, markers, plan, type Lang, type SlideText } from "https://raw.githubusercontent.com/thecertifyhub/ascend-pdf/a8e5f35eb3b2233dfb9fc1c4ea656e1359c8fa23/voice/roadmap-voice/fill.ts";
 import { frameList, slice, FRAME_S } from "./mp3.ts";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
