@@ -25,9 +25,11 @@ REGION = {
 }
 OCC_SHORT = {
     "EN": {"72410": "Automotive tech", "72400": "Industrial mechanic", "72020": "Maintenance supervisor",
-           "70012": "Maintenance manager", "21301": "Engineer", "72201": "Industrial electrician"},
+           "70012": "Maintenance manager", "21301": "Engineer", "72201": "Industrial electrician",
+           "22310": "Electrical technician", "22301": "Mechanical technician"},
     "FR": {"72410": "Technicien automobile", "72400": "Mécanicien industriel", "72020": "Superviseur de maintenance",
-           "70012": "Gestionnaire de maintenance", "21301": "Ingénieur", "72201": "Électricien industriel"},
+           "70012": "Gestionnaire de maintenance", "21301": "Ingénieur", "72201": "Électricien industriel",
+           "22310": "Technicien en génie électrique", "22301": "Technicien en génie mécanique"},
 }
 FAMILY = {
     "EN": {"specialist": "Maintenance Specialist", "supervisor": "Maintenance Supervisor", "planner": "Maintenance Planner",
