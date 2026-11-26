@@ -105,6 +105,7 @@ Deno.serve(async (r) => {
     if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(f.email)) missing.push("email");
     if (f.target_family !== "other" && !FAMILIES.includes(f.target_family)) missing.push("target_family");
     if (f.target_family === "other" && !f.target_title) missing.push("target_title");
+    if ((f.phone || "").replace(/\D/g, "").length < 10) missing.push("phone");
     if (typeof b.in_mr !== "boolean") missing.push("in_mr");
     if (b.consent !== true) missing.push("consent");
     if (!UPLOAD.test(b.upload_id ?? "")) missing.push("resume");

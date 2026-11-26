@@ -173,7 +173,7 @@
       e_type: "Please use a PDF or a Word (.docx) file.", e_size: "This file is over 10 MB.", e_up: "The upload did not go through. Please try again.",
       e_resume: "Please add your resume.",
       h_you: "2. Your details", t_you: "Filled in from your resume. Please check them, especially your email.",
-      l_first_name: "First name", l_last_name: "Last name", l_email: "Email", l_phone: "Phone <i>(optional)</i>",
+      l_first_name: "First name", l_last_name: "Last name", l_email: "Email", l_phone: "Phone",
       h_target: "3. Your goal", t_target: "The role you want next. Your roadmap is built around it.",
       l_target_family: "Target role", pick: "Choose a role",
       families: [["specialist", "Maintenance specialist"], ["supervisor", "Maintenance supervisor"], ["planner", "Maintenance planner"],
@@ -206,7 +206,7 @@
       e_type: "Veuillez utiliser un fichier PDF ou Word (.docx).", e_size: "Ce fichier dépasse 10 Mo.", e_up: "Le téléversement n'a pas abouti. Veuillez réessayer.",
       e_resume: "Veuillez ajouter votre CV.",
       h_you: "2. Vos coordonnées", t_you: "Remplies à partir de votre CV. Veuillez les vérifier, surtout votre courriel.",
-      l_first_name: "Prénom", l_last_name: "Nom", l_email: "Courriel", l_phone: "Téléphone <i>(facultatif)</i>",
+      l_first_name: "Prénom", l_last_name: "Nom", l_email: "Courriel", l_phone: "Téléphone",
       h_target: "3. Votre objectif", t_target: "Le poste que vous visez. Votre feuille de route est construite autour de lui.",
       l_target_family: "Poste visé", pick: "Choisissez un poste",
       families: [["specialist", "Spécialiste en maintenance"], ["supervisor", "Superviseur de maintenance"], ["planner", "Planificateur de maintenance"],
@@ -324,6 +324,7 @@
     ["first_name", "last_name", "target_industry", "target_location"].forEach(function (k) { if (mark(k, !val(k))) bad = true; });
     if (mark("email", !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(val("email")))) bad = true;
     if (mark("target_family", !val("target_family"))) bad = true;
+    if (mark("phone", val("phone").replace(/\D/g, "").length < 10)) bad = true;
     if (mark("target_title", val("target_family") === "other" && !val("target_title"))) bad = true;
     if (mark("in_mr", inMr() === null)) bad = true;
     if (mark("consent", !$("consent").checked)) bad = true;
