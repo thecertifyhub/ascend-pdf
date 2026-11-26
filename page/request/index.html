@@ -87,6 +87,17 @@
     .brand img { height:30px; }
   }
 </style>
+<!-- Google tag: Google Ads + GA4, shared with cmrp.thecertifyhub.com (cross-domain) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-16966280262"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('set', 'linker', { 'domains': ['cmrp.thecertifyhub.com', 'ascendleadershipgroup.ca'] });
+  gtag('config', 'AW-16966280262');
+  gtag('config', 'G-YRX392V369');
+  function track(name, extra) { try { gtag('event', name, Object.assign({ transport_type: 'beacon', roadmap_source: new URLSearchParams(location.search).get('src') || new URLSearchParams(location.search).get('va') || 'direct' }, extra || {})); } catch (e) {} }
+</script>
 </head>
 <body>
 <header class="site-nav"><div class="container nav-inner">
@@ -294,7 +305,7 @@
       .then(function (c) {
         fillIfEmpty("first_name", c.first_name); fillIfEmpty("last_name", c.last_name);
         fillIfEmpty("email", c.email); fillIfEmpty("phone", c.phone);
-        reading = false; dropState();
+        reading = false; dropState(); track("roadmap_resume_uploaded");
         if (!document.querySelector(".bad")) $("formerr").hidden = true;
       })
       .catch(function () { reading = false; dropState(upload ? null : "e_up"); });
@@ -338,7 +349,7 @@
       target_location: val("target_location"), in_mr: inMr(), note: val("note"), consent: true })
       .then(function (j) {
         if (j.ok) {
-          $("form").hidden = true; $("done").hidden = false;
+          $("form").hidden = true; $("done").hidden = false; track("roadmap_request");
           $("done_p").setAttribute("data-email", val("email")); doneText();
           try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (x) {}
           return;
