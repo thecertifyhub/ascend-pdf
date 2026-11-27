@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your roadmap | Ascend Leadership Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="https://ascendleadershipgroup.ca/logo.svg">
+<style>
+  /* Same tokens as ascendleadershipgroup.ca */
+  :root { --green:#245741; --green-deep:#1a4030; --gold:#fdb338; --ink:#1a1a1a; --body:#4a4a4a; --paper:#fdfcf8; --sand:#f5f3eb;
+    --line:#ece8db; --white:#fff; --mist:#c4cbb5; --cream:#f0ede5; --err:#b3412b;
+    --display:'Fraunces', Georgia, serif; --sans:'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color-scheme:light; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--sans); color:var(--ink); line-height:1.6; background:var(--paper); -webkit-font-smoothing:antialiased; font-size:16px; }
+  .container { max-width:860px; margin:0 auto; padding:0 24px; }
+  [hidden] { display:none !important; }
+
+  .site-nav { background:var(--white); border-bottom:1px solid var(--line); }
+  .nav-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:72px; }
+  .brand img { height:42px; width:auto; display:block; }
+  .lang { display:flex; border:1.5px solid var(--line); border-radius:6px; overflow:hidden; }
+  .lang button { border:0; background:transparent; padding:8px 14px; font:700 13px var(--sans); color:var(--body); cursor:pointer; }
+  .lang button.on { background:var(--green); color:var(--white); }
+
+  .hero { background:linear-gradient(135deg, var(--green) 0%, var(--green-deep) 100%); color:var(--white); padding:56px 0 120px; position:relative; overflow:hidden; }
+  .hero::before { content:''; position:absolute; top:-50%; right:-10%; width:600px; height:600px; background:radial-gradient(circle, rgba(253,179,56,.08) 0%, transparent 70%); pointer-events:none; }
+  .eyebrow { display:inline-block; color:var(--gold); font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
+  h1 { font-family:var(--display); font-weight:600; font-size:46px; line-height:1.1; letter-spacing:-1px; margin-bottom:16px; text-wrap:balance; }
+  .sub { font-size:19px; line-height:1.5; color:var(--cream); max-width:640px; }
+  .with-person { display:flex; align-items:center; gap:14px; margin-top:28px; color:var(--mist); font-size:14.5px; }
+  .with-person strong { color:var(--white); display:block; font-size:15.5px; }
+  .avatar { flex-shrink:0; width:56px; height:56px; border-radius:50%; overflow:hidden; background:var(--gold); border:2px solid var(--gold); }
+  .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+
+  .body { margin-top:-80px; position:relative; z-index:2; padding-bottom:64px; }
+  .card { background:var(--white); border:1px solid var(--line); border-radius:10px; padding:28px; margin-bottom:18px; box-shadow:0 10px 30px rgba(26,64,48,.07); }
+  .card h2 { font-family:var(--display); font-weight:600; font-size:22px; color:var(--ink); margin-bottom:4px; }
+  .card .hint { margin:0 0 18px; font-size:14.5px; color:var(--body); line-height:1.5; }
+  .drop { display:block; border:2px dashed #d9d2bd; border-radius:8px; padding:28px 16px; text-align:center; cursor:pointer; background:var(--sand); transition:border-color .2s; }
+  .drop:hover, .drop.over { border-color:var(--gold); }
+  .drop b { display:block; color:var(--green); font-size:16px; margin-bottom:4px; }
+  .drop span { font-size:14px; color:var(--body); }
+  .drop.done { border-style:solid; border-color:var(--green); background:#eef4f0; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .full { grid-column:1 / -1; }
+  label.f { display:block; font-size:14px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+  label.f i { font-style:normal; font-weight:400; color:var(--body); }
+  input[type=text], input[type=email], input[type=tel], select, textarea { width:100%; padding:12px 13px; border:1.5px solid #ddd6c4; border-radius:6px; font:16px var(--sans); color:var(--ink); background:var(--white); }
+  textarea { min-height:84px; resize:vertical; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(36,87,65,.15); }
+  .bad input, .bad select, .bad textarea { border-color:var(--err); }
+  .msg-err { display:none; color:var(--err); font-size:13px; margin-top:5px; }
+  .bad .msg-err { display:block; }
+  .yn { display:flex; gap:12px; }
+  .yn label { flex:1; display:flex; align-items:center; gap:10px; border:1.5px solid #ddd6c4; border-radius:6px; padding:12px 14px; cursor:pointer; font-size:15px; }
+  .yn label:has(input:checked) { border-color:var(--green); background:#eef4f0; }
+  .consent { display:flex; gap:12px; align-items:flex-start; font-size:14px; line-height:1.55; color:var(--body); cursor:pointer; }
+  .consent input { margin-top:3px; width:18px; height:18px; flex:none; accent-color:var(--green); }
+  .btn { display:block; width:100%; background:var(--gold); color:var(--ink); font:700 17px var(--sans); border:0; padding:18px 22px; border-radius:6px; cursor:pointer; box-shadow:0 6px 20px rgba(253,179,56,.3); transition:transform .2s, box-shadow .2s; }
+  .btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(253,179,56,.4); }
+  .btn[disabled] { background:#c9cfc4; box-shadow:none; transform:none; cursor:default; }
+  .formerr { color:var(--err); font-size:14px; margin:12px 0 0; }
+  .hp { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+  .done-box { background:var(--white); border:1px solid var(--line); border-left:6px solid var(--gold); border-radius:10px; padding:32px; box-shadow:0 10px 30px rgba(26,64,48,.07); }
+  .done-box h2 { font-family:var(--display); font-weight:600; font-size:26px; color:var(--green); margin-bottom:8px; }
+  .done-box p { font-size:16.5px; line-height:1.55; color:var(--body); }
+  #footer { margin-top:28px; font-size:14px; color:var(--body); }
+  #footer a { color:var(--green); font-weight:600; }
+
+  .site-footer { background:var(--green-deep); color:var(--white); padding:48px 0 28px; }
+  .footer-top { display:flex; justify-content:space-between; gap:32px; flex-wrap:wrap; margin-bottom:28px; }
+  .footer-logo { height:40px; width:auto; display:block; margin-bottom:14px; }
+  .legal { font-size:13px; color:rgba(255,255,255,.75); line-height:1.7; }
+  .legal a, .links a { color:rgba(255,255,255,.85); text-decoration:none; }
+  .legal a:hover, .links a:hover { color:var(--white); }
+  .links { font-size:14px; line-height:2; }
+  .footer-h { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin-bottom:6px; }
+  .footer-bottom { padding-top:22px; border-top:1px solid rgba(255,255,255,.15); font-size:12px; color:rgba(255,255,255,.55); line-height:1.5; }
+  .footer-bottom p + p { margin-top:8px; }
+
+  @media (max-width:640px) {
+    h1 { font-size:32px; } .sub { font-size:17px; } .hero { padding:40px 0 100px; }
+    .grid { grid-template-columns:1fr; } .card { padding:20px; } .yn { flex-direction:column; }
+    .brand img { height:30px; }
+  }
+</style>
+<!-- Google tag: Google Ads + GA4, shared with cmrp.thecertifyhub.com (cross-domain) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-16966280262"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('set', 'linker', { 'domains': ['cmrp.thecertifyhub.com', 'ascendleadershipgroup.ca'] });
+  gtag('config', 'AW-16966280262');
+  gtag('config', 'G-YRX392V369');
+  function track(name, extra) { try { gtag('event', name, Object.assign({ transport_type: 'beacon', roadmap_source: new URLSearchParams(location.search).get('src') || new URLSearchParams(location.search).get('va') || 'direct' }, extra || {})); } catch (e) {} }
+</script>
+</head>
+<body>
+<header class="site-nav"><div class="container nav-inner">
+  <a class="brand" href="https://ascendleadershipgroup.ca/"><img src="https://ascendleadershipgroup.ca/logo.svg" alt="Ascend Leadership Group" width="270" height="40"></a>
+  <div class="lang"><button type="button" id="lEN">EN</button><button type="button" id="lFR">FR</button></div>
+</div></header>
+<section class="hero"><div class="container">
+  <span class="eyebrow" id="eyebrow"></span>
+  <h1 id="title"></h1>
+  <p class="sub" id="sub"></p>
+  <div class="with-person"><span class="avatar"><img src="https://ascendleadershipgroup.ca/christian-dimene.jpg" alt="Christian Dimene" width="56" height="56"></span>
+    <span><strong id="person_h"></strong><span id="person_t"></span></span></div>
+</div></section>
+<div class="container body">
+  <form id="form" novalidate>
+    <div class="hp" aria-hidden="true"><label>Website <input type="text" id="website" tabindex="-1" autocomplete="off"></label></div>
+
+    <section class="card" id="c_resume">
+      <h2 id="h_resume"></h2>
+      <p class="hint" id="t_resume"></p>
+      <label class="drop" id="drop">
+        <b id="drop_b"></b><span id="drop_s"></span>
+        <input type="file" id="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      </label>
+      <div class="msg-err" id="e_resume"></div>
+    </section>
+
+    <section class="card">
+      <h2 id="h_you"></h2>
+      <p class="hint" id="t_you"></p>
+      <div class="grid">
+        <div id="w_first_name"><label class="f" for="first_name" id="l_first_name"></label><input type="text" id="first_name" autocomplete="given-name"><div class="msg-err" data-k="req"></div></div>
+        <div id="w_last_name"><label class="f" for="last_name" id="l_last_name"></label><input type="text" id="last_name" autocomplete="family-name"><div class="msg-err" data-k="req"></div></div>
+        <div id="w_email"><label class="f" for="email" id="l_email"></label><input type="email" id="email" autocomplete="email"><div class="msg-err" data-k="email"></div></div>
+        <div id="w_phone"><label class="f" for="phone" id="l_phone"></label><input type="tel" id="phone" autocomplete="tel"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 id="h_target"></h2>
+      <p class="hint" id="t_target"></p>
+      <div class="grid">
+        <div class="full" id="w_target_family"><label class="f" for="target_family" id="l_target_family"></label><select id="target_family"></select><div class="msg-err" data-k="req"></div></div>
+        <div class="full" id="w_target_title" hidden><label class="f" for="target_title" id="l_target_title"></label><input type="text" id="target_title"><div class="msg-err" data-k="req"></div></div>
+        <div id="w_target_industry"><label class="f" for="target_industry" id="l_target_industry"></label><input type="text" id="target_industry"><div class="msg-err" data-k="req"></div></div>
+        <div id="w_target_location"><label class="f" for="target_location" id="l_target_location"></label><input type="text" id="target_location"><div class="msg-err" data-k="req"></div></div>
+        <div class="full" id="w_in_mr"><label class="f" id="l_in_mr"></label>
+          <div class="yn"><label><input type="radio" name="in_mr" value="yes"> <span id="yes"></span></label><label><input type="radio" name="in_mr" value="no"> <span id="no"></span></label></div>
+          <div class="msg-err" data-k="choose"></div></div>
+        <div class="full" id="w_note"><label class="f" for="note" id="l_note"></label><textarea id="note"></textarea></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div id="w_consent"><label class="consent"><input type="checkbox" id="consent"> <span id="l_consent"></span></label><div class="msg-err" data-k="consent"></div></div>
+    </section>
+
+    <button class="btn" type="submit" id="send"></button>
+    <p class="formerr" id="formerr" hidden></p>
+  </form>
+
+  <div class="done-box" id="done" hidden><h2 id="done_h"></h2><p id="done_p"></p></div>
+  <p id="footer"></p>
+</div>
+<footer class="site-footer"><div class="container">
+  <div class="footer-top">
+    <div><img class="footer-logo" src="https://ascendleadershipgroup.ca/logo-reversed.svg" alt="Ascend Leadership Group" width="270" height="40">
+      <div class="legal"><span id="operated"></span><br>Mississauga, Ontario, Canada<br><a href="tel:+19055169367">+1 (905) 516-9367</a><br><a href="mailto:christian@ascendleadershipgroup.ca">christian@ascendleadershipgroup.ca</a></div></div>
+    <div class="links"><p class="footer-h" id="legal_h"></p><a id="privacy" href="https://cmrp.thecertifyhub.com/privacy/"></a><br><a id="terms" href="https://cmrp.thecertifyhub.com/terms/"></a><br><a href="https://www.linkedin.com/in/christian-dimene/" target="_blank" rel="noopener">LinkedIn</a></div>
+  </div>
+  <div class="footer-bottom"><p id="copy"></p><p id="tm"></p></div>
+</div></footer>
+<script>
+(function () {
+  var API = "https://jbncsigalbtfwkxpgwso.supabase.co/functions/v1/roadmap-intake";
+  var T = {
+    EN: {
+      eyebrow: "Free roadmap",
+      title: "Get your roadmap to your next role",
+      sub: "Your market, your gaps, your path. Free, within 48 hours.",
+      h_resume: "1. Your resume", t_resume: "We read it to prepare your roadmap and to fill in your details below.",
+      drop_b: "Choose your resume", drop_s: "PDF or Word (.docx), 10 MB max", drop_reading: "Reading your resume...", drop_done: "Resume received: ",
+      drop_change: "Choose another file",
+      e_type: "Please use a PDF or a Word (.docx) file.", e_size: "This file is over 10 MB.", e_up: "The upload did not go through. Please try again.",
+      e_resume: "Please add your resume.",
+      h_you: "2. Your details", t_you: "Filled in from your resume. Please check them, especially your email.",
+      l_first_name: "First name", l_last_name: "Last name", l_email: "Email", l_phone: "Phone",
+      h_target: "3. Your goal", t_target: "The role you want next. Your roadmap is built around it.",
+      l_target_family: "Target role", pick: "Choose a role",
+      families: [["specialist", "Maintenance specialist"], ["supervisor", "Maintenance supervisor"], ["planner", "Maintenance planner"],
+        ["reliability_engineer", "Reliability engineer"], ["manager", "Maintenance manager"], ["asset_management", "Asset management specialist"],
+        ["other", "Other, please specify"]],
+      l_target_title: "Your target role",
+      l_target_industry: "Target industry", ph_industry: "Mining, manufacturing, energy...",
+      l_target_location: "Target location", ph_location: "City, province or country",
+      l_in_mr: "Do you work in maintenance or reliability today?", yes: "Yes", no: "No",
+      l_note: "Additional information <i>(optional)</i>", ph_note: "A recent promotion, a planned move...",
+      l_consent: "I agree to receive my roadmap and follow-up emails from Ascend Leadership Group, and to Ascend using my resume to prepare it. I can unsubscribe at any time.",
+      send: "Get my free roadmap", sending: "Sending...",
+      req: "Required.", email: "Please enter a valid email.", choose: "Please choose an answer.", consent: "Please check this box to continue.",
+      e_dup: "We already received a roadmap request from this email in the last 30 days. Check your inbox, or write to us.",
+      e_fail: "Something went wrong. Please try again in a minute.", e_fix: "Please complete the fields marked in red.",
+      done_h: "We are preparing your roadmap", done_p: "You will receive it by email within 48 hours, at ",
+      footer: "Questions? Write to ",
+      person_h: "Prepared by Christian Dimene", person_t: "PMP, CMRP, CAMA, PSM. Founder of Ascend Leadership Group.",
+      operated: "Operated by The Certify Hub International Inc.", legal_h: "Legal", privacy: "Privacy Policy", terms: "Terms of Service",
+      copy: "\u00a9 2026 The Certify Hub International Inc. All rights reserved.",
+      tm: "CMRP is a registered trademark of the Society for Maintenance & Reliability Professionals (SMRP). Ascend Leadership Group is not affiliated with SMRP."
+    },
+    FR: {
+      eyebrow: "Feuille de route gratuite",
+      title: "Obtenez votre feuille de route vers votre prochain poste",
+      sub: "Votre march\u00e9, vos \u00e9carts, votre parcours. Gratuite, sous 48 heures.",
+      h_resume: "1. Votre CV", t_resume: "Nous le lisons pour pr\u00e9parer votre feuille de route et remplir vos coordonn\u00e9es ci-dessous.",
+      drop_b: "Choisir votre CV", drop_s: "PDF ou Word (.docx), 10 Mo maximum", drop_reading: "Lecture de votre CV...", drop_done: "CV re\u00e7u : ",
+      drop_change: "Choisir un autre fichier",
+      e_type: "Veuillez utiliser un fichier PDF ou Word (.docx).", e_size: "Ce fichier d\u00e9passe 10 Mo.", e_up: "Le t\u00e9l\u00e9versement n'a pas abouti. Veuillez r\u00e9essayer.",
+      e_resume: "Veuillez ajouter votre CV.",
+      h_you: "2. Vos coordonn\u00e9es", t_you: "Remplies \u00e0 partir de votre CV. Veuillez les v\u00e9rifier, surtout votre courriel.",
+      l_first_name: "Pr\u00e9nom", l_last_name: "Nom", l_email: "Courriel", l_phone: "T\u00e9l\u00e9phone",
+      h_target: "3. Votre objectif", t_target: "Le poste que vous visez. Votre feuille de route est construite autour de lui.",
+      l_target_family: "Poste vis\u00e9", pick: "Choisissez un poste",
+      families: [["specialist", "Sp\u00e9cialiste en maintenance"], ["supervisor", "Superviseur de maintenance"], ["planner", "Planificateur de maintenance"],
+        ["reliability_engineer", "Ing\u00e9nieur fiabilit\u00e9"], ["manager", "Gestionnaire de maintenance"], ["asset_management", "Sp\u00e9cialiste en gestion des actifs"],
+        ["other", "Autre, veuillez pr\u00e9ciser"]],
+      l_target_title: "Le poste que vous visez",
+      l_target_industry: "Industrie vis\u00e9e", ph_industry: "Mines, fabrication, \u00e9nergie...",
+      l_target_location: "Lieu vis\u00e9", ph_location: "Ville, province ou pays",
+      l_in_mr: "Travaillez-vous en maintenance ou en fiabilit\u00e9 aujourd'hui?", yes: "Oui", no: "Non",
+      l_note: "Informations compl\u00e9mentaires <i>(facultatif)</i>", ph_note: "Une promotion r\u00e9cente, un d\u00e9m\u00e9nagement pr\u00e9vu...",
+      l_consent: "J'accepte de recevoir ma feuille de route et les courriels de suivi d'Ascend Leadership Group, et qu'Ascend utilise mon CV pour la pr\u00e9parer. Je peux me d\u00e9sabonner en tout temps.",
+      send: "Obtenir ma feuille de route gratuite", sending: "Envoi en cours...",
+      req: "Obligatoire.", email: "Veuillez entrer un courriel valide.", choose: "Veuillez choisir une r\u00e9ponse.", consent: "Veuillez cocher cette case pour continuer.",
+      e_dup: "Nous avons d\u00e9j\u00e0 re\u00e7u une demande de feuille de route avec ce courriel au cours des 30 derniers jours. V\u00e9rifiez votre bo\u00eete de r\u00e9ception, ou \u00e9crivez-nous.",
+      e_fail: "Une erreur est survenue. Veuillez r\u00e9essayer dans une minute.", e_fix: "Veuillez compl\u00e9ter les champs indiqu\u00e9s en rouge.",
+      done_h: "Nous pr\u00e9parons votre feuille de route", done_p: "Vous la recevrez par courriel sous 48 heures, \u00e0 ",
+      footer: "Des questions? \u00c9crivez \u00e0 ",
+      person_h: "Pr\u00e9par\u00e9e par Christian Dimene", person_t: "PMP, CMRP, CAMA, PSM. Fondateur d'Ascend Leadership Group.",
+      operated: "Exploit\u00e9 par The Certify Hub International Inc.", legal_h: "Mentions l\u00e9gales", privacy: "Politique de confidentialit\u00e9", terms: "Conditions d'utilisation",
+      copy: "\u00a9 2026 The Certify Hub International Inc. Tous droits r\u00e9serv\u00e9s.",
+      tm: "CMRP est une marque d\u00e9pos\u00e9e de la Society for Maintenance & Reliability Professionals (SMRP). Ascend Leadership Group n'est pas affili\u00e9 \u00e0 la SMRP."
+    }
+  };
+  function $(id) { return document.getElementById(id); }
+  var qs = new URLSearchParams(location.search);
+  var L = (qs.get("lang") || "").toLowerCase() === "fr" ? "FR" : (qs.get("lang") || "").toLowerCase() === "en" ? "EN"
+    : ((navigator.language || "").toLowerCase().indexOf("fr") === 0 ? "FR" : "EN");
+  var upload = null, fileName = "", reading = false, sent = false;
+
+  function post(body) {
+    return fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { j._status = r.status; return j; }); });
+  }
+  function setHTML(id, v) { var e = $(id); if (e) e.innerHTML = v; }
+  function setText(id, v) { var e = $(id); if (e) e.textContent = v; }
+
+  function paint() {
+    var t = T[L];
+    document.documentElement.lang = L === "FR" ? "fr" : "en";
+    document.title = (L === "FR" ? "Votre feuille de route" : "Your roadmap") + " | Ascend Leadership Group";
+    $("lEN").className = L === "EN" ? "on" : ""; $("lFR").className = L === "FR" ? "on" : "";
+    ["eyebrow", "title", "sub", "h_resume", "t_resume", "h_you", "t_you", "h_target", "t_target", "yes", "no", "l_consent", "done_h", "person_h", "person_t", "operated", "legal_h", "privacy", "terms", "copy", "tm"].forEach(function (k) { setText(k, t[k]); });
+    ["l_first_name", "l_last_name", "l_email", "l_phone", "l_target_family", "l_target_industry", "l_target_location", "l_in_mr", "l_note"].forEach(function (k) { setHTML(k, t[k]); });
+    setHTML("l_target_title", t.l_target_title);
+    // the target role in their own words is asked only when none of the listed roles fits
+    var other = $("target_family").value === "other"; $("w_target_title").hidden = !other; if (!other) $("target_title").value = "";
+    $("target_industry").placeholder = t.ph_industry; $("target_location").placeholder = t.ph_location; $("note").placeholder = t.ph_note;
+    var sel = $("target_family"), cur = sel.value; sel.innerHTML = "";
+    var o0 = document.createElement("option"); o0.value = ""; o0.textContent = t.pick; sel.appendChild(o0);
+    t.families.forEach(function (f) { var o = document.createElement("option"); o.value = f[0]; o.textContent = f[1]; sel.appendChild(o); });
+    sel.value = cur;
+    dropState();
+    if (!sent) setText("send", t.send);
+    document.querySelectorAll(".msg-err[data-k]").forEach(function (e) { e.textContent = t[e.getAttribute("data-k")]; });
+    var f = $("footer"); f.textContent = t.footer;
+    var a = document.createElement("a"); a.href = "mailto:christian@ascendleadershipgroup.ca"; a.textContent = "christian@ascendleadershipgroup.ca";
+    f.appendChild(a); f.appendChild(document.createTextNode("."));
+    if ($("done_p").getAttribute("data-email")) doneText();
+  }
+  function dropState(err) {
+    var t = T[L], d = $("drop");
+    d.classList.toggle("done", !!upload && !reading);
+    if (reading) { setText("drop_b", t.drop_reading); setText("drop_s", fileName); }
+    else if (upload) { setText("drop_b", t.drop_done + fileName); setText("drop_s", t.drop_change); }
+    else { setText("drop_b", t.drop_b); setText("drop_s", t.drop_s); }
+    setText("e_resume", err ? t[err] : t.e_resume);
+    $("c_resume").classList.toggle("bad", !!err);
+  }
+  function fillIfEmpty(id, v) { if (v && !$(id).value.trim()) { $(id).value = v; var w = $("w_" + id); if (w) w.classList.remove("bad"); } }
+
+  function pick(file) {
+    if (!file) return;
+    var ext = (file.name.toLowerCase().match(/\.(pdf|docx)$/) || [])[1];
+    if (!ext) { upload = null; dropState("e_type"); return; }
+    if (file.size > 10 * 1024 * 1024) { upload = null; dropState("e_size"); return; }
+    fileName = file.name; reading = true; upload = null; dropState();
+    var type = ext === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    post({ action: "slot", filename: file.name, size: file.size, website: $("website").value })
+      .then(function (s) {
+        if (!s.signed_url) throw new Error(s.error || "slot");
+        return fetch(s.signed_url, { method: "PUT", headers: { "Content-Type": type, "x-upsert": "true" }, body: file })
+          .then(function (u) { if (!u.ok) throw new Error("put " + u.status); return s.upload_id; });
+      })
+      .then(function (id) { upload = id; return post({ action: "read", upload_id: id }); })
+      .then(function (c) {
+        fillIfEmpty("first_name", c.first_name); fillIfEmpty("last_name", c.last_name);
+        fillIfEmpty("email", c.email); fillIfEmpty("phone", c.phone);
+        reading = false; dropState(); track("roadmap_resume_uploaded");
+        if (!document.querySelector(".bad")) $("formerr").hidden = true;
+      })
+      .catch(function () { reading = false; dropState(upload ? null : "e_up"); });
+  }
+
+  $("file").addEventListener("change", function () { pick(this.files[0]); this.value = ""; });
+  var drop = $("drop");
+  drop.addEventListener("dragover", function (e) { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", function () { drop.classList.remove("over"); });
+  drop.addEventListener("drop", function (e) { e.preventDefault(); drop.classList.remove("over"); pick(e.dataTransfer.files[0]); });
+  $("target_family").addEventListener("change", paint);
+  // a field marked in red clears as soon as it is corrected
+  function unmark(e) { var w = e.target.closest ? e.target.closest(".bad") : null; if (w && w.id !== "c_resume") w.classList.remove("bad"); if (!document.querySelector(".bad")) $("formerr").hidden = true; }
+  $("form").addEventListener("input", unmark); $("form").addEventListener("change", unmark);
+  $("lEN").addEventListener("click", function () { L = "EN"; paint(); });
+  $("lFR").addEventListener("click", function () { L = "FR"; paint(); });
+
+  function val(id) { return $(id).value.trim(); }
+  function mark(id, bad) { var w = $("w_" + id); if (w) w.classList.toggle("bad", bad); return bad; }
+  function inMr() { var r = document.querySelector("input[name=in_mr]:checked"); return r ? r.value === "yes" : null; }
+  function doneText() { var p = $("done_p"); p.textContent = T[L].done_p + p.getAttribute("data-email") + "."; }
+
+  $("form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (sent || reading) return;
+    var t = T[L], bad = false;
+    ["first_name", "last_name", "target_industry", "target_location"].forEach(function (k) { if (mark(k, !val(k))) bad = true; });
+    if (mark("email", !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(val("email")))) bad = true;
+    if (mark("target_family", !val("target_family"))) bad = true;
+    if (mark("phone", val("phone").replace(/\D/g, "").length < 10)) bad = true;
+    if (mark("target_title", val("target_family") === "other" && !val("target_title"))) bad = true;
+    if (mark("in_mr", inMr() === null)) bad = true;
+    if (mark("consent", !$("consent").checked)) bad = true;
+    if (!upload) { dropState("e_resume"); bad = true; }
+    var fe = $("formerr");
+    if (bad) { fe.textContent = t.e_fix; fe.hidden = false; return; }
+    fe.hidden = true; sent = true; $("send").disabled = true; setText("send", t.sending);
+    post({ action: "submit", upload_id: upload, lang: L, va: qs.get("va") || "", src: qs.get("src") || "", website: $("website").value,
+      first_name: val("first_name"), last_name: val("last_name"), email: val("email"), phone: val("phone"),
+      target_family: val("target_family"), target_title: val("target_title"), target_industry: val("target_industry"),
+      target_location: val("target_location"), in_mr: inMr(), note: val("note"), consent: true })
+      .then(function (j) {
+        if (j.ok) {
+          $("form").hidden = true; $("done").hidden = false; track("roadmap_request");
+          $("done_p").setAttribute("data-email", val("email")); doneText();
+          try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (x) {}
+          return;
+        }
+        sent = false; $("send").disabled = false; setText("send", t.send);
+        if (j.error === "duplicate") fe.textContent = t.e_dup;
+        else if (j.error === "missing") { (j.fields || []).forEach(function (k) { if (k === "resume") { upload = null; dropState("e_resume"); } else mark(k, true); }); fe.textContent = t.e_fix; }
+        else fe.textContent = t.e_fail;
+        fe.hidden = false;
+      })
+      .catch(function () { sent = false; $("send").disabled = false; setText("send", t.send); fe.textContent = t.e_fail; fe.hidden = false; });
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
